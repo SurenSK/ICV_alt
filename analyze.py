@@ -1,7 +1,6 @@
 import pandas as pd
 import json
 
-dataset = pd.read_json("falcon_7b_1000.jsonl", lines=True)
 class fscore():
     def __init__(self, name, tp=0, fp=0, fn=0, tn=0):
         self.name=name
@@ -32,30 +31,32 @@ class fscore():
             f"True Negatives: {d(self.tn, other.tn)}"
         
 
-ours = fscore("ours")
-icv = fscore("icv")
+def analyze_fp(fp):
+    dataset = pd.read_json(fp, lines=True)
+    ours = fscore("ours")
+    icv = fscore("icv")
 
-for index, sample in dataset.iterrows():
-    a, o, s = sample['psent'], sample['sent_ours'], sample['sent_sheng']
-    if a == "POSITIVE":
-        if o == "NEGATIVE":
-            ours.tn += 1
+    for index, sample in dataset.iterrows():
+        a, o, s = sample['psent'], sample['sent_ours'], sample['sent_sheng']
+        if a == "POSITIVE":
+            if o == "NEGATIVE":
+                ours.tn += 1
+            else:
+                ours.fp += 1
+            if s == "NEGATIVE":
+                icv.tn += 1
+            else:
+                icv.fp += 1
         else:
-            ours.fp += 1
-        if s == "NEGATIVE":
-            icv.tn += 1
-        else:
-            icv.fp += 1
-    else:
-        if o == "POSITIVE":
-            ours.tp += 1
-        else:
-            ours.fn += 1
-        if s == "POSITIVE":
-            icv.tp += 1
-        else:
-            icv.fn += 1
+            if o == "POSITIVE":
+                ours.tp += 1
+            else:
+                ours.fn += 1
+            if s == "POSITIVE":
+                icv.tp += 1
+            else:
+                icv.fn += 1
 
-print(ours)
-print(icv)
-print(ours/icv)
+    print(ours)
+    print(icv)
+    print(ours/icv)

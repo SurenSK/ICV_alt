@@ -133,3 +133,6 @@ dataset.save_to_disk("test.hf")
 with jsonlines.open(output_fp, mode='w') as writer:
     for sample in dataset:
         writer.write(sample)
+
+from analyze import analyze_fp
+analyze_fp(output_fp)
