@@ -298,4 +298,13 @@ class BaseProbInference:
 
         direction = (pca.components_.sum(dim=0,keepdim=True) + pca.mean_).mean(0)
 
-        return direction.view(num_layers, hidden_dim)   
+        return direction.view(num_layers, hidden_dim)
+    @staticmethod
+    def get_icv_ours(model, inputs):
+        hidden_states = BaseProbInference.get_latentstates(model, inputs)
+        hidden_states_all = []
+        for hs in hidden_states:
+            h = hs[0]-hs[1]
+            hidden_states_all.append(h)
+        fit_data = torch.stack(hidden_states_all)
+        return fit_data.mean(0).squeeze()
