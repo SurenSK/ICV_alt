@@ -21,7 +21,7 @@ import jsonlines
 class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
-    alpha=1.3
+    alpha=0.1
     num_samples=10
     model_type='gpt2'
     model_size='sm'
@@ -46,7 +46,8 @@ model_signature = build_model_signature(args.model_type, args.model_size)
 tokenizer = build_tokenizer(args.model_type, args.model_size, padding_side='right')
 model = build_model(args.model_type, args.model_size, args.in_8bit)
 torch.autograd.set_grad_enabled(False)
-model.to('cuda')
+if not args.in_8bit:
+    model = model.to('cuda').eval()
 get_text = pipeline('text-generation', model=model, tokenizer=tokenizer)
 get_sent = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
 dataset = load_dataset(args.dataset, split='train')
@@ -91,6 +92,10 @@ _ = model_with_adapter(model).get_model(torch.stack(icv_to_shift_pos,dim=1).cuda
 print("Original adapter loaded")
 
 for sample in ptext:
+    if sample == "":
+        text_sheng.append("")
+        sent_sheng.append("")
+        continue
     text_sheng_ = get_text(f"Please paraphrase the following text: {sample} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
     sent_sheng.append(get_sent(text_sheng_)[0]['label'])
     text_sheng.append(text_sheng_)
@@ -109,6 +114,10 @@ _ = model_with_adapter(model).get_model(torch.stack(icv_to_shift_pos,dim=1).cuda
 print("New adapter loaded")
 
 for sample in ptext:
+    if sample == "":
+        text_ours.append("")
+        sent_ours.append("")
+        continue
     text_ours_ = get_text(f"Please paraphrase the following text: {sample} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
     sent_ours.append(get_sent(text_ours_)[0]['label'])
     text_ours.append(text_ours_)
