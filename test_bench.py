@@ -66,6 +66,9 @@ sent_ours=[]
 dataset = dataset.select(range(args.num_samples))
 print(f"Model loaded: {model_signature}")
 
+def sample_llm(text):
+    return get_text(f"Please paraphrase the following text: {text} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
+
 output_fp = f"{args.model_type}_{args.model_size}.jsonl"
 for sample in dataset:
     text = sample['text']
@@ -78,6 +81,7 @@ for sample in dataset:
         ptext.append("")
         psent.append("")
 
+ptext=["I really hate this product it sucks lol"]
 icv_pos = task_agent.get_icv(model, tokenize_each_demonstration(tokenizer, sentiment_demonstrations))
 icv_to_shift_pos = [icv_pos]
 while True:
@@ -99,6 +103,7 @@ for sample in ptext:
     text_sheng_ = get_text(f"Please paraphrase the following text: {sample} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
     sent_sheng.append(get_sent(text_sheng_)[0]['label'])
     text_sheng.append(text_sheng_)
+    print(text_sheng[-1], sent_sheng[-1])
 
 icv_pos = task_agent.get_icv_ours(model, tokenize_each_demonstration(tokenizer, sentiment_demonstrations))
 icv_to_shift_pos = [icv_pos]
@@ -121,6 +126,7 @@ for sample in ptext:
     text_ours_ = get_text(f"Please paraphrase the following text: {sample} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
     sent_ours.append(get_sent(text_ours_)[0]['label'])
     text_ours.append(text_ours_)
+    print(text_ours[-1], text_ours[-1])
 
 dataset=dataset.add_column('ptext', ptext)
 dataset=dataset.add_column('psent', psent)
