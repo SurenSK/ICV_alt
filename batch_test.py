@@ -55,12 +55,20 @@ get_text = pipeline('text-generation', model=model, tokenizer=tokenizer)
 # pipe = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
 
 import time
+report = []
 for batch_size in [1, 2, 4, 8, 12, 14, 15, 16]:
-    t0=time.time()
-    print("-" * 30)
-    print(f"Streaming batch_size={batch_size}, num_samples={args.num_samples}")
     dataset_=Dataset.from_dict(dataset[:batch_size*10])
+    t0=time.time()
+    report.append("-" * 30)
+    print(report[-1])
+    report.append(f"Streaming batch_size={batch_size}, num_samples={len(dataset_['text'])}")
+    print(report[-1])
     for out in tqdm(get_text(KeyDataset(dataset_, "text"), batch_size=batch_size, pad_token_id=get_text.tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1),total=len(dataset_["text"])):
         pass
     ttot=time.time()-t0
-    print(f"Time taken: {ttot:.2f}s, {len(dataset['text'])/ttot:.2f} samples/s")
+    report.append(f"Time taken: {ttot:.2f}s, {len(dataset_['text'])/ttot:.2f} samples/s")
+    print(report[-1])
+
+print("FINAL REPORT")
+for l in report:
+    print(l)
