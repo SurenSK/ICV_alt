@@ -17,8 +17,6 @@ import pandas as pd
 from transformers import pipeline
 from datasets import load_dataset
 import jsonlines
-from datasets import Dataset
-from transformers.pipelines.pt_utils import KeyDataset
 
 class Args():
     dataset='yelp_review_full'
@@ -74,13 +72,10 @@ def sample_llm(text):
     return get_text(f"Please paraphrase the following text: {text} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
 
 output_fp = f"{args.model_type}_{args.model_size}.jsonl"
-dataset = Dataset.from_dict({"text":[f"Please paraphrase the following text {x[:500]} paraphrase: " for x in dataset["text"]]})
-# dataset = dataset.map(lambda e: {'length': len(e['text'])})
-# dataset = dataset.sort('length')
 for sample in dataset:
     text = sample['text']
     if sample['label'] < 3:
-        ptext_=get_text(KeyDataset(dataset, "text"), batch_size=args.batch_size, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
+        ptext_=get_text(f"Please paraphrase the following text: {text} paraphrase: ", batch_size=args.batch_size, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
         ptext_=ptext_.split('paraphrase: ')[1].strip()
         psent.append(get_sent(ptext_)[0]['label'])
         ptext.append(ptext_)
