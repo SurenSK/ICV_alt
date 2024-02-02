@@ -22,7 +22,7 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=0.1
-    num_samples=10
+    num_samples=512
     model_type='gpt2'
     model_size='sm'
     max_length=15
@@ -39,21 +39,25 @@ class Args():
     seed=0
     top_k=10
 
-
 args = Args()
 setup_env(gpu_s=args.gpus, seed=args.seed)
 model_signature = build_model_signature(args.model_type, args.model_size)
-tokenizer = build_tokenizer(args.model_type, args.model_size, padding_side='right')
+tokenizer = build_tokenizer(args.model_type, args.model_size, padding_side='left')
 model = build_model(args.model_type, args.model_size, args.in_8bit)
 model.to('cuda').eval()
 dataset = load_dataset(args.dataset, split=f'train[:{args.num_samples}]')
-dataset = Dataset.from_dict({"text":[f"Please paraphrase the following text {x} paraphrase: " for x in dataset["text"]]})
-
+dataset = Dataset.from_dict({"text":[f"Please paraphrase the following text {x[:500]} paraphrase: " for x in dataset["text"]]})
+dataset = dataset.map(lambda e: {'length': len(e['text'])})
+dataset = dataset.sort('length')
 get_text = pipeline('text-generation', model=model, tokenizer=tokenizer)
-pipe = pipeline("text-classification", device=0)
+# pipe = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
 
-for batch_size in [1, 8, 64, 256]:
+import time
+for batch_size in [1, 2, 4, 8, 12, 14, 15, 16]:
+    t0=time.time()
     print("-" * 30)
-    print(f"Streaming batch_size={batch_size}")
-    for out in tqdm(get_text(dataset["text"], batch_size=batch_size, pad_token_id=get_text.tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1), total=len(dataset["text"])):
-        pass
+    print(f"Streaming batch_size={batch_size}, num_samples={args.num_samples}")
+    for out in get_text(dataset["text"], batch_size=batch_size, pad_token_id=get_text.tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1):
+        print(out)
+    ttot=time.time()-t0
+    print(f"Time taken: {ttot:.2f}s, {len(dataset['text'])/ttot:.2f} samples/s")
