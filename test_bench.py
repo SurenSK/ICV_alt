@@ -17,12 +17,15 @@ import pandas as pd
 from transformers import pipeline
 from datasets import load_dataset
 import jsonlines
+from datasets import Dataset
+from transformers.pipelines.pt_utils import KeyDataset
 
 class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=0.1
     num_samples=10
+    batch_size=128
     model_type='gpt2'
     model_size='sm'
     max_length=15
@@ -51,6 +54,7 @@ if not args.in_8bit:
 get_text = pipeline('text-generation', model=model, tokenizer=tokenizer)
 get_sent = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
 dataset = load_dataset(args.dataset, split='train')
+
 TaskHandler = load_task("demo")
 task_agent = TaskHandler(args.prompt_version)
 task_agent.set_seed(args.seed)
@@ -70,10 +74,13 @@ def sample_llm(text):
     return get_text(f"Please paraphrase the following text: {text} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
 
 output_fp = f"{args.model_type}_{args.model_size}.jsonl"
+dataset = Dataset.from_dict({"text":[f"Please paraphrase the following text {x[:500]} paraphrase: " for x in dataset["text"]]})
+# dataset = dataset.map(lambda e: {'length': len(e['text'])})
+# dataset = dataset.sort('length')
 for sample in dataset:
     text = sample['text']
     if sample['label'] < 3:
-        ptext_=get_text(f"Please paraphrase the following text: {text} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
+        ptext_=get_text(KeyDataset(dataset, "text"), batch_size=args.batch_size, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
         ptext_=ptext_.split('paraphrase: ')[1].strip()
         psent.append(get_sent(ptext_)[0]['label'])
         ptext.append(ptext_)
@@ -100,7 +107,7 @@ for sample in ptext:
         text_sheng.append("")
         sent_sheng.append("")
         continue
-    text_sheng_ = get_text(f"Please paraphrase the following text: {sample} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
+    text_sheng_ = get_text(f"Please paraphrase the following text: {sample} paraphrase: ", batch_size=args.batch_size, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
     sent_sheng.append(get_sent(text_sheng_)[0]['label'])
     text_sheng.append(text_sheng_)
     print(text_sheng[-1], sent_sheng[-1])
@@ -123,7 +130,7 @@ for sample in ptext:
         text_ours.append("")
         sent_ours.append("")
         continue
-    text_ours_ = get_text(f"Please paraphrase the following text: {sample} paraphrase: ", do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
+    text_ours_ = get_text(f"Please paraphrase the following text: {sample} paraphrase: ", batch_size=args.batch_size, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)[0]['generated_text']
     sent_ours.append(get_sent(text_ours_)[0]['label'])
     text_ours.append(text_ours_)
     print(text_ours[-1], text_ours[-1])
