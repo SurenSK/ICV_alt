@@ -18,6 +18,8 @@ from transformers import pipeline
 from datasets import load_dataset
 import jsonlines
 from datasets import Dataset
+from transformers.pipelines.pt_utils import KeyDataset
+
 class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
@@ -57,7 +59,8 @@ for batch_size in [1, 2, 4, 8, 12, 14, 15, 16]:
     t0=time.time()
     print("-" * 30)
     print(f"Streaming batch_size={batch_size}, num_samples={args.num_samples}")
-    for out in get_text(dataset["text"], batch_size=batch_size, pad_token_id=get_text.tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1):
-        print(out)
+    dataset_=Dataset.from_dict(dataset[:batch_size*10])
+    for out in tqdm(get_text(KeyDataset(dataset_, "text"), batch_size=batch_size, pad_token_id=get_text.tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1),total=len(dataset_["text"])):
+        pass
     ttot=time.time()-t0
     print(f"Time taken: {ttot:.2f}s, {len(dataset['text'])/ttot:.2f} samples/s")
