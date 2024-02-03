@@ -24,7 +24,7 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=0.1
-    num_samples=512
+    num_samples=64
     batch_size=32
     truncation_len=512
     model_type='gpt2'
@@ -41,7 +41,8 @@ class Args():
     momentum=0.9
     batch_size=32
     seed=0
-    top_k=10
+    top_k=50
+    eos_token_id=[104,193,1001,25,1702,18858,3166]
 
 args = Args()
 setup_env(gpu_s=args.gpus, seed=args.seed)
@@ -50,7 +51,7 @@ tokenizer = build_tokenizer(args.model_type, args.model_size, padding_side='left
 model = build_model(args.model_type, args.model_size, args.in_8bit)
 if not args.in_8bit:
     model.to('cuda').eval()
-text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size, pad_token_id=tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)
+text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size, eos_token_id=args.eos_token_id, pad_token_id=tokenizer.pad_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)
 sent_pipe = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english", batch_size=args.batch_size)
 def get_prompt(samples):
     output=[]
@@ -77,7 +78,7 @@ t0 = time.time()
 dataset = dataset.map(lambda sample: {'trText': sample['text'][:args.truncation_len]})
 dataset = dataset.map(lambda sample: {'length': len(sample['trText'])}).sort('length')
 dataset = dataset.map(lambda sample: {"trSent": [s["label"] for s in sent_pipe(sample["trText"])]}, batched=True, batch_size=8)
-dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["trText"])}, batched=True, batch_size=1000)
+dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["text"])}, batched=True, batch_size=1000)
 print(f"Finished preprocessing dataset, time: {time.time()-t0} seconds\n")
 
 print("Processing Sheng ICV")
@@ -91,7 +92,7 @@ while True:
         break
 updated_wrapper = model_with_adapter(model)
 _ = model_with_adapter(model).get_model(torch.stack(icv_pos_sheng,dim=1).cuda(), alpha = [args.alpha])
-dataset = dataset.map(lambda sample: {"shengText": [s[0]["generated_text"] for s in text_pipe(sample["trPrompt"])]}, batched=True)
+dataset = dataset.map(lambda sample: {"shengText": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["trPrompt"])]}, batched=True)
 dataset = dataset.map(lambda sample: {"shengSent": [s["label"] for s in sent_pipe(sample["shengText"])]}, batched=True)
 print(f"Finished processing Sheng ICVs, time: {time.time()-t0} seconds\n")
 
@@ -106,7 +107,7 @@ while True:
         break
 updated_wrapper = model_with_adapter(model)
 _ = model_with_adapter(model).get_model(torch.stack(icv_pos_ours,dim=1).cuda(), alpha = [args.alpha])
-dataset = dataset.map(lambda sample: {"ourText": [s[0]["generated_text"] for s in text_pipe(sample["trPrompt"])]}, batched=True)
+dataset = dataset.map(lambda sample: {"ourText": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["trPrompt"])]}, batched=True)
 dataset = dataset.map(lambda sample: {"ourSent": [s["label"] for s in sent_pipe(sample["ourText"])]}, batched=True)
 print(f"Finished processing Our ICVs, time: {time.time()-t0} seconds\n")
 
@@ -117,3 +118,5 @@ for sample in dataset:
     s+=1 if sample["shengSent"]=="POSITIVE" else 0
     o+=1 if sample["ourSent"]=="POSITIVE" else 0
 print(f"Positivity - Base: {a/tot}, Sheng: {s/tot}, Ours: {o/tot}")
+
+dataset.to_json("processed_dataset.jsonl")
