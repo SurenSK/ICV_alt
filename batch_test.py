@@ -71,6 +71,18 @@ for pipe_batch_size in [1, 2, 4, 8, 12, 14, 15, 16]:
         report.append(f"Time taken: {ttot:.2f}s, {len(dataset_['text'])/ttot:.2f} samples/s")
         print(report[-1])
 
+    dataset_=Dataset.from_dict(dataset[:pipe_batch_size*10])
+    t0=time.time()
+    report.append("-" * 30)
+    print(report[-1])
+    report.append(f"keyDataset, Pipe_batch_size={pipe_batch_size}, num_samples={len(dataset_['text'])}")
+    print(report[-1])
+    dataset_c = [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(KeyDataset(dataset_, "text"))]
+    dataset_.add_column("text2", dataset_c)
+    ttot=time.time()-t0
+    report.append(f"Time taken: {ttot:.2f}s, {len(dataset_['text'])/ttot:.2f} samples/s")
+    print(report[-1])
+        
 print("FINAL REPORT")
 for l in report:
     print(l)
