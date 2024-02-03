@@ -40,6 +40,7 @@ class Args():
     batch_size=32
     seed=0
     top_k=10
+    eos_token_id=[104,193,1001,25,1702,18858,3166]
 
 args = Args()
 setup_env(gpu_s=args.gpus, seed=args.seed)
@@ -51,23 +52,24 @@ dataset = load_dataset(args.dataset, split=f'train[:{args.num_samples}]')
 dataset = Dataset.from_dict({"text":[f"Please paraphrase the following text {x[:500]} paraphrase: " for x in dataset["text"]]})
 dataset = dataset.map(lambda e: {'length': len(e['text'])})
 dataset = dataset.sort('length')
-get_text = pipeline('text-generation', model=model, tokenizer=tokenizer)
+
 # pipe = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english")
 
 import time
 report = []
-for batch_size in [1, 2, 4, 8, 12, 14, 15, 16]:
-    dataset_=Dataset.from_dict(dataset[:batch_size*10])
-    t0=time.time()
-    report.append("-" * 30)
-    print(report[-1])
-    report.append(f"Streaming batch_size={batch_size}, num_samples={len(dataset_['text'])}")
-    print(report[-1])
-    for out in tqdm(get_text(KeyDataset(dataset_, "text"), batch_size=batch_size, pad_token_id=get_text.tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1),total=len(dataset_["text"])):
-        pass
-    ttot=time.time()-t0
-    report.append(f"Time taken: {ttot:.2f}s, {len(dataset_['text'])/ttot:.2f} samples/s")
-    print(report[-1])
+for pipe_batch_size in [1, 2, 4, 8, 12, 14, 15, 16]:
+    text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=pipe_batch_size, eos_token_id=args.eos_token_id, pad_token_id=tokenizer.pad_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)
+    for map_batch_size in [1, 2, 4, 8, 12, 14, 15, 16]:
+        dataset_=Dataset.from_dict(dataset[:pipe_batch_size*10])
+        t0=time.time()
+        report.append("-" * 30)
+        print(report[-1])
+        report.append(f"Map_batch_size={map_batch_size}, Pipe_batch_size={pipe_batch_size}, num_samples={len(dataset_['text'])}")
+        print(report[-1])
+        dataset_ = dataset_.map(lambda sample: {"text2": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["text"])]}, batched=True)
+        ttot=time.time()-t0
+        report.append(f"Time taken: {ttot:.2f}s, {len(dataset_['text'])/ttot:.2f} samples/s")
+        print(report[-1])
 
 print("FINAL REPORT")
 for l in report:
