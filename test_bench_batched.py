@@ -68,7 +68,11 @@ print("Forming ICVs")
 TaskHandler = load_task("demo")
 task_agent = TaskHandler(args.prompt_version)
 task_agent.set_seed(args.seed)
-sentiment_demonstrations = pd.read_csv(args.demonstrations_fp, header=None).values.tolist()
+sentiment_demonstrations = [["Zero stars, I hate it.", "Five stars, I love it."],
+["It was terrible!", "it was awesome!"],
+["I would call this the worse denny's ever ", "I would call this the best denny's ever "],
+["I would recommend find another place.", "I would recommend this place again!"],
+["Would not recommend.", "Strongly recommend."]]
 icv_pos_sheng = [task_agent.get_icv(model, tokenize_each_demonstration(tokenizer, sentiment_demonstrations))]
 icv_pos_ours = [task_agent.get_icv_ours(model, tokenize_each_demonstration(tokenizer, sentiment_demonstrations))]
 print("Formed ICVs")
@@ -78,25 +82,25 @@ dataset = load_dataset(args.dataset, split='train')
 dataset = dataset.filter(lambda sample: sample['label']<3).select(range(args.num_samples))
 print(f"Finished loading dataset, number of samples: {len(dataset)}\n")
 
-#print("Preprocessing dataset")
-#t0 = time.time()
-#dataset = dataset.map(lambda sample: {'trText': sample['text'][:args.truncation_len]})
-#dataset = dataset.map(lambda sample: {'length': len(sample['trText'])}).sort('length')
-#dataset = dataset.map(lambda sample: {"trSent": [s["label"] for s in sent_pipe(sample["trText"])]}, batched=True, batch_size=8)
-#dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["text"])}, batched=True, batch_size=1000)
-#print(f"Finished preprocessing dataset, time: {time.time()-t0} seconds\n")
+print("Preprocessing dataset")
+t0 = time.time()
+dataset = dataset.map(lambda sample: {'trText': sample['text'][:args.truncation_len]})
+dataset = dataset.map(lambda sample: {'length': len(sample['trText'])}).sort('length')
+dataset = dataset.map(lambda sample: {"trSent": [s["label"] for s in sent_pipe(sample["trText"])]}, batched=True, batch_size=8)
+dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["text"])}, batched=True, batch_size=1000)
+print(f"Finished preprocessing dataset, time: {time.time()-t0} seconds\n")
 
 query_inputs_sentiment =  tokenizer("""Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: """)
 
 
-for i in range(20):
-    print(text_pipe("Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: "))
+#for i in range(20):
+#    print(text_pipe("Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: "))
 
 
-#print("Processing no ICV")
-#dataset = dataset.map(lambda sample: {"nText": [s[0]["generated_text"].split('paraphrase: ')[1].strip() for s in text_pipe(sample["trPrompt"])]}, batched=True)
-#dataset = dataset.map(lambda sample: {"nSent": [s["label"] for s in sent_pipe(sample["nText"])]}, batched=True)
-#print("Finished processing no ICV")
+print("Processing no ICV")
+dataset = dataset.map(lambda sample: {"nText": [s[0]["generated_text"].split('paraphrase: ')[1].strip() for s in text_pipe(sample["trPrompt"])]}, batched=True)
+dataset = dataset.map(lambda sample: {"nSent": [s["label"] for s in sent_pipe(sample["nText"])]}, batched=True)
+print("Finished processing no ICV")
 
 print("Processing Sheng ICV")
 t0 = time.time()
@@ -110,9 +114,9 @@ while True:
 updated_wrapper = model_with_adapter(model)
 _ = updated_wrapper.get_model(torch.stack(icv_pos_sheng,dim=1).cuda(), alpha = [args.alpha])
 
-for i in range(20):
-    print(text_pipe("Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: "))
-exit()
+#for i in range(20):
+#    print(text_pipe("Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: "))
+#exit()
 
 dataset = dataset.map(lambda sample: {"shengText": [s[0]["generated_text"].split('paraphrase: ')[1].strip() for s in text_pipe(sample["trPrompt"])]}, batched=True)
 dataset = dataset.map(lambda sample: {"shengSent": [s["label"] for s in sent_pipe(sample["shengText"])]}, batched=True)
