@@ -51,7 +51,12 @@ model = build_model(args.model_type, args.model_size, args.in_8bit)
 if not args.in_8bit:
     model.to('cuda').eval()
 #text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size, pad_token_id=tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1, top_p=0.75, eos_token_id=[104,193,1001,25,1702,18858,3166])
-text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size)
+text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size, max_new_tokens=15,
+                                             do_sample=True,
+                                             temperature=0.7,
+                                             top_p=0.75,
+                                             top_k=50,
+                                             eos_token_id=[104,193,1001,25,1702,18858,3166],)
 sent_pipe = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english", batch_size=args.batch_size, device=0)
 def get_prompt(samples):
     output=[]
@@ -73,37 +78,19 @@ dataset = load_dataset(args.dataset, split='train')
 dataset = dataset.filter(lambda sample: sample['label']<3).select(range(args.num_samples))
 print(f"Finished loading dataset, number of samples: {len(dataset)}\n")
 
-print("Preprocessing dataset")
-t0 = time.time()
-dataset = dataset.map(lambda sample: {'trText': sample['text'][:args.truncation_len]})
-dataset = dataset.map(lambda sample: {'length': len(sample['trText'])}).sort('length')
-dataset = dataset.map(lambda sample: {"trSent": [s["label"] for s in sent_pipe(sample["trText"])]}, batched=True, batch_size=8)
-dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["text"])}, batched=True, batch_size=1000)
-print(f"Finished preprocessing dataset, time: {time.time()-t0} seconds\n")
+#print("Preprocessing dataset")
+#t0 = time.time()
+#dataset = dataset.map(lambda sample: {'trText': sample['text'][:args.truncation_len]})
+#dataset = dataset.map(lambda sample: {'length': len(sample['trText'])}).sort('length')
+#dataset = dataset.map(lambda sample: {"trSent": [s["label"] for s in sent_pipe(sample["trText"])]}, batched=True, batch_size=8)
+#dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["text"])}, batched=True, batch_size=1000)
+#print(f"Finished preprocessing dataset, time: {time.time()-t0} seconds\n")
 
 query_inputs_sentiment =  tokenizer("""Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: """)
 
 
 for i in range(20):
-    print(text_pipe("Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: ", max_new_tokens=15,
-                        do_sample=True,
-                        temperature=0.7,
-                        top_p=0.75,
-                        top_k=50,
-                        eos_token_id=[104,193,1001,25,1702,18858,3166],))
-
-    generation_output = model.generate(
-                            input_ids=torch.tensor(query_inputs_sentiment['input_ids']).unsqueeze(0).cuda(),
-                            attention_mask=torch.tensor(query_inputs_sentiment['attention_mask']).unsqueeze(0).cuda(),
-                            max_new_tokens=15,
-                            do_sample=True,
-                            temperature=0.7,
-                            top_p=0.75,
-                            top_k=50,
-                            eos_token_id=[104,193,1001,25,1702,18858,3166],
-                        )
-    decoded_output = tokenizer.decode(generation_output[0])
-    print(decoded_output)
+    print(text_pipe("Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: "))
 
 
 #print("Processing no ICV")
@@ -121,7 +108,7 @@ while True:
         print('All ICV vectors have been removed!')    
         break
 updated_wrapper = model_with_adapter(model)
-_ = model_with_adapter(model).get_model(torch.stack(icv_pos_sheng,dim=1).cuda(), alpha = [args.alpha])
+_ = updated_wrapper.get_model(torch.stack(icv_pos_sheng,dim=1).cuda(), alpha = [args.alpha])
 
 for i in range(20):
     print(text_pipe("Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: "))
