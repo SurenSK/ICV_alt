@@ -22,17 +22,17 @@ from transformers.pipelines.pt_utils import KeyDataset
 
 class Args():
     dataset='yelp_review_full'
-    demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
-    alpha=0.1
+    demonstrations_fp="sentiment_demonstrations.csv"
+    alpha=1.0
     num_samples=512
     batch_size=32
     truncation_len=512
-    model_type='gpt2'
-    model_size='sm'
+    model_type='falcon'
+    model_size='7b'
     max_length=20
     gpus=1
-    in_8bit=False
-    temperature=0.45
+    in_8bit=True
+    temperature=0.7
     prompt_version='default'
     exemplar_method='random'
     num_k_shots=1
@@ -41,7 +41,7 @@ class Args():
     momentum=0.9
     batch_size=32
     seed=0
-    top_k=10
+    top_k=50
 
 args = Args()
 setup_env(gpu_s=args.gpus, seed=args.seed)
@@ -50,8 +50,9 @@ tokenizer = build_tokenizer(args.model_type, args.model_size, padding_side='left
 model = build_model(args.model_type, args.model_size, args.in_8bit)
 if not args.in_8bit:
     model.to('cuda').eval()
-text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size, pad_token_id=tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)
-sent_pipe = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english", batch_size=args.batch_size)
+#text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size, pad_token_id=tokenizer.eos_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1, top_p=0.75, eos_token_id=[104,193,1001,25,1702,18858,3166])
+text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size)
+sent_pipe = pipeline("text-classification", model="distilbert-base-uncased-finetuned-sst-2-english", batch_size=args.batch_size, device=0)
 def get_prompt(samples):
     output=[]
     for sample in samples:
@@ -77,8 +78,38 @@ t0 = time.time()
 dataset = dataset.map(lambda sample: {'trText': sample['text'][:args.truncation_len]})
 dataset = dataset.map(lambda sample: {'length': len(sample['trText'])}).sort('length')
 dataset = dataset.map(lambda sample: {"trSent": [s["label"] for s in sent_pipe(sample["trText"])]}, batched=True, batch_size=8)
-dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["trText"])}, batched=True, batch_size=1000)
+dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["text"])}, batched=True, batch_size=1000)
 print(f"Finished preprocessing dataset, time: {time.time()-t0} seconds\n")
+
+query_inputs_sentiment =  tokenizer("""Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: """)
+
+
+for i in range(20):
+    print(text_pipe("Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: ", max_new_tokens=15,
+                        do_sample=True,
+                        temperature=0.7,
+                        top_p=0.75,
+                        top_k=50,
+                        eos_token_id=[104,193,1001,25,1702,18858,3166],))
+
+    generation_output = model.generate(
+                            input_ids=torch.tensor(query_inputs_sentiment['input_ids']).unsqueeze(0).cuda(),
+                            attention_mask=torch.tensor(query_inputs_sentiment['attention_mask']).unsqueeze(0).cuda(),
+                            max_new_tokens=15,
+                            do_sample=True,
+                            temperature=0.7,
+                            top_p=0.75,
+                            top_k=50,
+                            eos_token_id=[104,193,1001,25,1702,18858,3166],
+                        )
+    decoded_output = tokenizer.decode(generation_output[0])
+    print(decoded_output)
+
+
+#print("Processing no ICV")
+#dataset = dataset.map(lambda sample: {"nText": [s[0]["generated_text"].split('paraphrase: ')[1].strip() for s in text_pipe(sample["trPrompt"])]}, batched=True)
+#dataset = dataset.map(lambda sample: {"nSent": [s["label"] for s in sent_pipe(sample["nText"])]}, batched=True)
+#print("Finished processing no ICV")
 
 print("Processing Sheng ICV")
 t0 = time.time()
@@ -91,7 +122,12 @@ while True:
         break
 updated_wrapper = model_with_adapter(model)
 _ = model_with_adapter(model).get_model(torch.stack(icv_pos_sheng,dim=1).cuda(), alpha = [args.alpha])
-dataset = dataset.map(lambda sample: {"shengText": [s[0]["generated_text"] for s in text_pipe(sample["trPrompt"])]}, batched=True)
+
+for i in range(20):
+    print(text_pipe("Please paraphrase the following sentence. Sentence: Worst restaurant ever!, paraphrase: "))
+exit()
+
+dataset = dataset.map(lambda sample: {"shengText": [s[0]["generated_text"].split('paraphrase: ')[1].strip() for s in text_pipe(sample["trPrompt"])]}, batched=True)
 dataset = dataset.map(lambda sample: {"shengSent": [s["label"] for s in sent_pipe(sample["shengText"])]}, batched=True)
 print(f"Finished processing Sheng ICVs, time: {time.time()-t0} seconds\n")
 
@@ -106,14 +142,17 @@ while True:
         break
 updated_wrapper = model_with_adapter(model)
 _ = model_with_adapter(model).get_model(torch.stack(icv_pos_ours,dim=1).cuda(), alpha = [args.alpha])
-dataset = dataset.map(lambda sample: {"ourText": [s[0]["generated_text"] for s in text_pipe(sample["trPrompt"])]}, batched=True)
+dataset = dataset.map(lambda sample: {"ourText": [s[0]["generated_text"].split('paraphrase: ')[1].strip() for s in text_pipe(sample["trPrompt"])]}, batched=True)
 dataset = dataset.map(lambda sample: {"ourSent": [s["label"] for s in sent_pipe(sample["ourText"])]}, batched=True)
 print(f"Finished processing Our ICVs, time: {time.time()-t0} seconds\n")
 
-a,o,s=0,0,0
+a,n,o,s=0,0,0,0
 tot=len(dataset)
 for sample in dataset:
     a+=1 if sample["trSent"]=="POSITIVE" else 0
+    n+=1 if sample["nSent"]=="POSITIVE" else 0
     s+=1 if sample["shengSent"]=="POSITIVE" else 0
     o+=1 if sample["ourSent"]=="POSITIVE" else 0
-print(f"Positivity - Base: {a/tot}, Sheng: {s/tot}, Ours: {o/tot}")
+print(f"Positivity - Base: {a/tot}, no ICV: {n/tot}, Sheng: {s/tot}, Ours: {o/tot}")
+
+dataset.to_json("whatever.jsonl")
