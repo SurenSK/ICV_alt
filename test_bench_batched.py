@@ -84,6 +84,12 @@ dataset = dataset.map(lambda sample: {"trSent": [s["label"] for s in sent_pipe(s
 dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["text"])}, batched=True, batch_size=1000)
 print(f"Finished preprocessing dataset, time: {time.time()-t0} seconds\n")
 
+print("Processing Base")
+t0 = time.time()
+dataset = dataset.map(lambda sample: {"baseText": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["trPrompt"])]}, batched=True)
+dataset = dataset.map(lambda sample: {"baseSent": [s["label"] for s in sent_pipe(sample["baseText"])]}, batched=True)
+print(f"Finished processing Base, time: {time.time()-t0} seconds\n")
+
 print("Processing Sheng ICV")
 t0 = time.time()
 while True:
