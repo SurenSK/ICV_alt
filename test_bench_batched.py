@@ -63,7 +63,10 @@ print("Forming ICVs")
 TaskHandler = load_task("demo")
 task_agent = TaskHandler(args.prompt_version)
 task_agent.set_seed(args.seed)
-sentiment_demonstrations = pd.read_csv(args.demonstrations_fp, header=None).values.tolist()
+sentiment_demonstrations = [("Zero stars, I hate it." , "Five stars, I love it."), ("It was terrible!" , "it was awesome!"),
+                            ("I would call this the worse denny's ever " , "I would call this the best denny's ever "),
+                            ("I would recommend find another place." , "I would recommend this place again!"),
+                            ("Would not recommend." , "Strongly recommend.")]
 icv_pos_sheng = [task_agent.get_icv(model, tokenize_each_demonstration(tokenizer, sentiment_demonstrations))]
 icv_pos_ours = [task_agent.get_icv_ours(model, tokenize_each_demonstration(tokenizer, sentiment_demonstrations))]
 print("Formed ICVs")
