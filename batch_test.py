@@ -25,11 +25,11 @@ class Args():
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=0.1
     num_samples=512
-    model_type='falcon'
-    model_size='7b'
+    model_type='gpt2'
+    model_size='sm'
     max_length=15
     gpus=1
-    in_8bit=True
+    in_8bit=False
     temperature=0.45
     prompt_version='default'
     exemplar_method='random'

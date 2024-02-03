@@ -24,7 +24,7 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=0.1
-    num_samples=64
+    num_samples=32
     batch_size=32
     truncation_len=512
     model_type='gpt2'
@@ -80,15 +80,19 @@ print("Preprocessing dataset")
 t0 = time.time()
 dataset = dataset.map(lambda sample: {'trText': sample['text'][:args.truncation_len]})
 dataset = dataset.map(lambda sample: {'length': len(sample['trText'])}).sort('length')
-dataset = dataset.map(lambda sample: {"trSent": [s["label"] for s in sent_pipe(sample["trText"])]}, batched=True, batch_size=8)
-dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["text"])}, batched=True, batch_size=1000)
-print(f"Finished preprocessing dataset, time: {time.time()-t0} seconds\n")
+# dataset = dataset.map(lambda sample: {"trSent": [s["label"] for s in sent_pipe(sample["trText"])]}, batched=True, batch_size=8)
+# dataset = dataset.map(lambda sample: {"trPrompt": get_prompt(sample["text"])}, batched=True, batch_size=1000)
+dataset = dataset.add_column("trSent", [s for s in sent_pipe(KeyDataset(dataset, "trText"))])
+dataset = dataset.add_column("trPrompt", [s for s in get_prompt(KeyDataset(dataset, "text"))])
+print(f"Finished preprocessing dataset, time: {time.time()-t0} seconds, {(time.time()-t0)/len(dataset)}samples/s\n")
 
 print("Processing Base")
 t0 = time.time()
-dataset = dataset.map(lambda sample: {"baseText": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["trPrompt"])]}, batched=True)
-dataset = dataset.map(lambda sample: {"baseSent": [s["label"] for s in sent_pipe(sample["baseText"])]}, batched=True)
-print(f"Finished processing Base, time: {time.time()-t0} seconds\n")
+# dataset = dataset.map(lambda sample: {"baseText": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["trPrompt"])]}, batched=True)
+# dataset = dataset.map(lambda sample: {"baseSent": [s["label"] for s in sent_pipe(sample["baseText"])]}, batched=True)
+dataset = dataset.add_column("baseText", [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(KeyDataset(dataset, "trPrompt"))])
+dataset = dataset.add_column("baseSent", [s for s in sent_pipe(KeyDataset(dataset, "baseText"))])
+print(f"Finished processing Base, time: {time.time()-t0} seconds, {(time.time()-t0)/len(dataset)}samples/s\n")
 
 print("Processing Sheng ICV")
 t0 = time.time()
@@ -101,9 +105,11 @@ while True:
         break
 updated_wrapper = model_with_adapter(model)
 _ = model_with_adapter(model).get_model(torch.stack(icv_pos_sheng,dim=1).cuda(), alpha = [args.alpha])
-dataset = dataset.map(lambda sample: {"shengText": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["trPrompt"])]}, batched=True)
-dataset = dataset.map(lambda sample: {"shengSent": [s["label"] for s in sent_pipe(sample["shengText"])]}, batched=True)
-print(f"Finished processing Sheng ICVs, time: {time.time()-t0} seconds\n")
+# dataset = dataset.map(lambda sample: {"shengText": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["trPrompt"])]}, batched=True)
+# dataset = dataset.map(lambda sample: {"shengSent": [s["label"] for s in sent_pipe(sample["shengText"])]}, batched=True)
+dataset = dataset.add_column("shengText", [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(KeyDataset(dataset, "trPrompt"))])
+dataset = dataset.add_column("shengSent", [s for s in sent_pipe(KeyDataset(dataset, "shengText"))])
+print(f"Finished processing Sheng ICVs, time: {time.time()-t0} seconds, {(time.time()-t0)/len(dataset)}samples/s\n")
 
 print("Processing our ICV")
 t0 = time.time()
@@ -116,16 +122,18 @@ while True:
         break
 updated_wrapper = model_with_adapter(model)
 _ = model_with_adapter(model).get_model(torch.stack(icv_pos_ours,dim=1).cuda(), alpha = [args.alpha])
-dataset = dataset.map(lambda sample: {"ourText": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["trPrompt"])]}, batched=True)
-dataset = dataset.map(lambda sample: {"ourSent": [s["label"] for s in sent_pipe(sample["ourText"])]}, batched=True)
-print(f"Finished processing Our ICVs, time: {time.time()-t0} seconds\n")
+# dataset = dataset.map(lambda sample: {"ourText": [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(sample["trPrompt"])]}, batched=True)
+# dataset = dataset.map(lambda sample: {"ourSent": [s["label"] for s in sent_pipe(sample["ourText"])]}, batched=True)
+dataset = dataset.add_column("ourText", [s[0]["generated_text"].split("paraphrase: ")[1] for s in text_pipe(KeyDataset(dataset, "trPrompt"))])
+dataset = dataset.add_column("ourSent", [s for s in sent_pipe(KeyDataset(dataset, "ourText"))])
+print(f"Finished processing Our ICVs, time: {time.time()-t0} seconds, {(time.time()-t0)/len(dataset)}samples/s\n")
 
 a,o,s=0,0,0
 tot=len(dataset)
 for sample in dataset:
-    a+=1 if sample["trSent"]=="POSITIVE" else 0
-    s+=1 if sample["shengSent"]=="POSITIVE" else 0
-    o+=1 if sample["ourSent"]=="POSITIVE" else 0
+    a+=1 if sample["trSent"]["label"]=="POSITIVE" else 0
+    s+=1 if sample["shengSent"]["label"]=="POSITIVE" else 0
+    o+=1 if sample["ourSent"]["label"]=="POSITIVE" else 0
 print(f"Positivity - Base: {a/tot}, Sheng: {s/tot}, Ours: {o/tot}")
 
 dataset.to_json("processed_dataset.jsonl")
