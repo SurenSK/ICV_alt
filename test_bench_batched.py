@@ -129,3 +129,22 @@ for sample in dataset:
 print(f"Positivity - Base: {a/tot}, Sheng: {s/tot}, Ours: {o/tot}")
 
 dataset.to_json("processed_dataset.jsonl")
+
+def plot_sent_length(dataset):
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    df = pd.DataFrame(dataset)
+    df['text_length'] = df['text'].apply(len)
+    df = df.sort_values(by='text_length')
+    df['shengSent'] = df['shengSent'].map({'NEGATIVE': 0, 'POSITIVE': 1})
+    window_width = 8
+    mean_values = []
+    for i in range(len(df) - window_width + 1):
+        window = df.iloc[i:i+window_width]
+        mean_values.append(window['shengSent'].mean())
+    plt.figure(figsize=(12, 6))
+    plt.plot(mean_values)
+    plt.title('Mean of "shengSent" in Sliding Window')
+    plt.xlabel('Window Start Index')
+    plt.ylabel('Mean of shengSent (0=NEGATIVE, 1=POSITIVE)')
+    plt.show()
