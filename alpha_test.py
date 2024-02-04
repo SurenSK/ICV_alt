@@ -67,16 +67,18 @@ sentiment_demonstrations = [("Zero stars, I hate it." , "Five stars, I love it."
                             ("Would not recommend." , "Strongly recommend.")]
 icv = [task_agent.get_icv(model, tokenize_each_demonstration(tokenizer, sentiment_demonstrations))]
 
-dataset = load_dataset("json", data_files="processed_dataset.jsonl", split="train")
-dataset = dataset.map(lambda sample: {'actLength': len(sample['text'])}).sort('length')
+dataset = load_dataset(args.dataset, split='train')
+dataset = dataset.map(lambda sample: {'actLength': len(sample['text'])}).sort('actLength')
 
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
 indices = np.linspace(0, len(dataset)-1, args.num_samples, dtype=int)
 samples = dataset.select(indices)
 
+
 def get_sentiment(samples):
-    samples_ = list(np.repeat(samples["text"], args.num_repeats))
-    responses = [r[0]["generated_text"] for r in text_pipe(samples_)]
+    samples = samples.map(lambda s: {"prompt": f"paraphrase: {s['text']}"})
+    samples_ = [s for s in samples["text"] for _ in range(args.num_repeats)]
+    responses = [r[0]["generated_text"].split("paraphrase: ")[1] for r in text_pipe(samples_)]
     sents = [1 if s=="POSITIVE" else 0 for s in sent_pipe(responses)]
     sents = [np.mean(s) for s in np.array_split(sents, len(samples))]
     return sents
