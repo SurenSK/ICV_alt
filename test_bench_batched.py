@@ -39,7 +39,6 @@ class Args():
     kv_iter= 15
     step_size=0.01
     momentum=0.9
-    batch_size=32
     seed=0
     top_k=50
     eos_token_id=[104,193,1001,25,1702,18858,3166]
