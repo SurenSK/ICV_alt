@@ -8,8 +8,8 @@ class Args():
     num_samples=10
     batch_size=32
     truncation_len=512
-    model_type='gpt2'
-    model_size='sm'
+    model_type='falcon'
+    model_size='7b'
     max_length=20
     num_samples = 64
     dataset_fp = "processed_dataset.jsonl"
