@@ -6,6 +6,8 @@ from transformers import pipeline
 import numpy as np
 from datasets import load_dataset, Dataset
 def setup_llm_calls(args):
+    import os
+    os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
     setup_env(gpu_s=args.gpus, seed=args.seed)
     tokenizer = build_tokenizer(args.model_type, args.model_size, padding_side='left')
     model = build_model(args.model_type, args.model_size, args.in_8bit)
