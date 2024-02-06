@@ -6,7 +6,7 @@ class Args():
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1
     num_samples=256
-    batch_size=32
+    batch_size=112
     truncation_len=512
     in_8bit=True
     model_type='falcon'
@@ -31,25 +31,21 @@ class Args():
 args = Args()
 dataset = load_dataset(args.dataset, split='train')
 dataset = dataset.map(lambda sample: {'actLength': len(sample['text'])}).sort('actLength')
-# dataset = dataset.filter(lambda sample: sample['actLength']<3000)
+dataset = dataset.filter(lambda sample: sample['actLength']<2500)
 
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
 indices = np.linspace(0, len(dataset)-1, args.num_samples, dtype=int)
 dataset = dataset.select(indices)
-
-
 
 import time
 from time import sleep
 def print_perf(args, dataset):
     model, tokenizer, text_pipe, sent_pipe = setup_llm_calls(args)
     t0=time.time()
-    sents = prompt_to_sent(dataset, args.num_repeats, text_pipe, sent_pipe)
+    resps, sents = prompt_to_sent(dataset, args.num_repeats, text_pipe, sent_pipe)
     print(f"Num Samples: {args.num_repeats*args.num_samples} Batch Size: {args.batch_size} Time taken: {time.time()-t0:.2f} Samples/sec: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}")
     del text_pipe, sent_pipe, tokenizer, model
-    print("deleting cache...")
     flush_tensors()
-    sleep(5)
 
 while True:
     args.batch_size += 16

@@ -48,10 +48,19 @@ class model_with_adapter(torch.nn.Module):
         return self.model
 
     def remove_adapter(self):
-        
         weight_all = []
-        
         for i in range(0, len(self.model.transformer.h)):
             weight_all.append(self.model.transformer.h[i].mlp[1].weight_all)
             self.model.transformer.h[i].mlp = self.model.transformer.h[i].mlp[0]
         return weight_all
+    
+    def reset_adapter(self):
+        if isinstance(self.model.transformer.h[0].mlp, torch.nn.modules.container.Sequential):
+            for i in range(0, len(self.model.transformer.h)):
+                self.model.transformer.h[i].mlp = self.model.transformer.h[i].mlp[0]
+        return self.model
+    
+    def set_adapter(self, icvs, alpha):
+        self.model = self.reset_adapter()
+        self.model = self.get_model(torch.stack(icvs,dim=1).cuda(), [alpha])
+        return self.model
