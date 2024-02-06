@@ -29,9 +29,9 @@ class Args():
     num_samples=10
     batch_size=112 #112
     truncation_len=512
-    in_8bit=False #True
-    model_type='gpt2' #falcon
-    model_size='sm' #7b
+    in_8bit=True #True
+    model_type='falcon' #falcon
+    model_size='7b' #7b
     max_length=20
     dataset_fp = "processed_dataset.jsonl"
     num_repeats = 3 #3
