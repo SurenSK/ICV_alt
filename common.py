@@ -28,9 +28,9 @@ def setup_gpu(gpu_s):
 
 
 def setup_env(gpu_s, seed):
-    os.environ["BITSANDBYTES_NOWELCOME"] = "1"
-    os.environ["TOKENIZERS_PARALLELISM"] = "false"
-    setup_gpu(gpu_s)
+    # os.environ["BITSANDBYTES_NOWELCOME"] = "1"
+    # os.environ["TOKENIZERS_PARALLELISM"] = "false"
+    # setup_gpu(gpu_s)
     setup_seed(seed)
 
 
