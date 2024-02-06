@@ -1,4 +1,4 @@
-from getResp import setup_llm_calls, prompt_to_sent
+from getResp import setup_llm_calls, prompt_to_sent, flush_tensors
 from datasets import load_dataset
 import numpy as np
 class Args():
@@ -6,7 +6,7 @@ class Args():
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1
     num_samples=256
-    batch_size=66
+    batch_size=64
     truncation_len=512
     in_8bit=True
     model_type='falcon'
@@ -40,11 +40,16 @@ dataset = dataset.select(indices)
 
 
 import time
+from time import sleep
 def print_perf(args, dataset):
-    text_pipe, sent_pipe = setup_llm_calls(args)
+    model, text_pipe, sent_pipe = setup_llm_calls(args)
     t0=time.time()
     sents = prompt_to_sent(dataset, args.num_repeats, text_pipe, sent_pipe)
     print(f"Num Samples: {args.num_repeats*args.num_samples} Batch Size: {args.batch_size} Time taken: {time.time()-t0:.2f} Samples/sec: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}")
+    del text_pipe, sent_pipe, model
+    print("deleting cache...")
+    flush_tensors()
+    sleep(5)
 
 while True:
     print_perf(args, dataset)
