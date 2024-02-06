@@ -42,15 +42,16 @@ dataset = dataset.select(indices)
 import time
 from time import sleep
 def print_perf(args, dataset):
-    model, text_pipe, sent_pipe = setup_llm_calls(args)
+    model, tokenizer, text_pipe, sent_pipe = setup_llm_calls(args)
     t0=time.time()
     sents = prompt_to_sent(dataset, args.num_repeats, text_pipe, sent_pipe)
     print(f"Num Samples: {args.num_repeats*args.num_samples} Batch Size: {args.batch_size} Time taken: {time.time()-t0:.2f} Samples/sec: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}")
-    del text_pipe, sent_pipe, model
+    del text_pipe, sent_pipe, tokenizer, model
     print("deleting cache...")
     flush_tensors()
     sleep(5)
 
 while True:
+    args.batch_size += 16
     print_perf(args, dataset)
-    args.batch_size += 2
+
