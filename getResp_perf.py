@@ -32,7 +32,7 @@ class Args():
 args = Args()
 dataset = load_dataset(args.dataset, split='train')
 dataset = dataset.map(lambda sample: {'actLength': len(sample['text'])}).sort('actLength')
-# dataset = dataset.filter(lambda sample: sample['actLength']<2500)
+dataset = dataset.filter(lambda sample: sample['actLength']<2500)
 
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
 indices = np.linspace(0, len(dataset)-1, args.num_samples, dtype=int)
