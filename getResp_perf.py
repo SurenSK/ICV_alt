@@ -46,8 +46,6 @@ def print_perf(args, dataset):
     sents = prompt_to_sent(dataset, args.num_repeats, text_pipe, sent_pipe)
     print(f"Num Samples: {args.num_repeats*args.num_samples} Batch Size: {args.batch_size} Time taken: {time.time()-t0:.2f} Samples/sec: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}")
 
-print_perf(args, dataset)
-args.batch_size = 80
-print_perf(args, dataset)
-args.batch_size = 96
-print_perf(args, dataset)
+while True:
+    print_perf(args, dataset)
+    args.batch_size += 2
