@@ -29,9 +29,9 @@ class Args():
     num_samples=10
     batch_size=112 #112
     truncation_len=512
-    in_8bit=True #True
-    model_type='falcon' #falcon
-    model_size='7b' #7b
+    in_8bit=False #True
+    model_type='gpt2' #falcon
+    model_size='sm' #7b
     max_length=20
     dataset_fp = "processed_dataset.jsonl"
     num_repeats = 3 #3
@@ -78,9 +78,11 @@ for icv_num,icv in enumerate(icvs):
     for alpha_ in alphas:
         t0 = time.time()
         model_with_adapter(model).set_adapter(icv, alpha_)
-        _, sents_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
+        resps, sents_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
         sents = [s + [n] for s, n in zip(sents, sents_)]
-        print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}")
+        resps = tokenizer.encode_batch(resps)
+        maxLen, totLen = max(map(len, resps)), sum(map(len, resps))
+        print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f} Max Len Resp: {maxLen} Tokens/Sec: {totLen/(time.time()-t0):.2f}")
 samples = samples.add_column(f"sentiments", sents)
 # samples.save_to_disk("sentiments")
 samples.to_json("sentiments2.jsonl")
