@@ -6,7 +6,7 @@ class Args():
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1
     num_samples=256
-    batch_size=32
+    batch_size=64
     truncation_len=512
     in_8bit=True
     model_type='falcon'
@@ -46,8 +46,6 @@ def print_perf(args, dataset):
     sents = prompt_to_sent(dataset, args.num_repeats, text_pipe, sent_pipe)
     print(f"Num Samples: {args.num_repeats*args.num_samples} Batch Size: {args.batch_size} Time taken: {time.time()-t0:.2f} Samples/sec: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}")
 
-print_perf(args, dataset)
-args.batch_size = 64
 print_perf(args, dataset)
 args.batch_size = 128
 print_perf(args, dataset)
