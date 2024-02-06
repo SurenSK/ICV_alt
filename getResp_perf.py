@@ -6,7 +6,7 @@ class Args():
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1
     num_samples=256
-    batch_size=64
+    batch_size=32
     truncation_len=512
     in_8bit=True
     model_type='falcon'
@@ -31,7 +31,7 @@ class Args():
 args = Args()
 dataset = load_dataset(args.dataset, split='train')
 dataset = dataset.map(lambda sample: {'actLength': len(sample['text'])}).sort('actLength')
-dataset = dataset.filter(lambda sample: sample['actLength']<3000)
+# dataset = dataset.filter(lambda sample: sample['actLength']<3000)
 
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
 indices = np.linspace(0, len(dataset)-1, args.num_samples, dtype=int)
