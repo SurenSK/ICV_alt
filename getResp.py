@@ -27,5 +27,5 @@ def prompt_to_sent(samples, num_repeats, text_pipe, sent_pipe):
     sents = [np.mean(s) for s in np.array_split(sents, len(samples))]
     return sents
 
-def flusg_tensors():
+def flush_tensors():
     torch.cuda.empty_cache()
