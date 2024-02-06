@@ -8,6 +8,7 @@ class Args():
     num_samples=10
     batch_size=32
     truncation_len=512
+    in_8bit=True
     model_type='falcon'
     model_size='7b'
     max_length=20
@@ -18,7 +19,6 @@ class Args():
     a0 = 0
     a1 = 3
     gpus=1
-    in_8bit=False
     temperature=0.45
     prompt_version='default'
     exemplar_method='random'
