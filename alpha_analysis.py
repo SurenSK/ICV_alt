@@ -80,7 +80,7 @@ for icv_num,icv in enumerate(icvs):
         model_with_adapter(model).set_adapter(icv, alpha_)
         resps, sents_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
         sents = [s + [n] for s, n in zip(sents, sents_)]
-        resps = tokenizer.encode_batch(resps)
+        resps = [tokenizer.encode(s) for s in resps]
         maxLen, totLen = max(map(len, resps)), sum(map(len, resps))
         print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f} Max Len Resp: {maxLen} Tokens/Sec: {totLen/(time.time()-t0):.2f}")
 samples = samples.add_column(f"sentiments", sents)
