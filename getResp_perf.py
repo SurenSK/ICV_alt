@@ -47,7 +47,7 @@ def print_perf(args, dataset):
     print(f"Num Samples: {args.num_repeats*args.num_samples} Batch Size: {args.batch_size} Time taken: {time.time()-t0:.2f} Samples/sec: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}")
 
 print_perf(args, dataset)
-args.batch_size = 128
+args.batch_size = 80
 print_perf(args, dataset)
-args.batch_size = 256
+args.batch_size = 96
 print_perf(args, dataset)
