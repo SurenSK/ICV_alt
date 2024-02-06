@@ -27,17 +27,17 @@ class Args():
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
     num_samples=10
-    batch_size=112 #112
     truncation_len=512
+    batch_size=112 #112
     in_8bit=True #True
     model_type='falcon' #falcon
     model_size='7b' #7b
     max_length=20
     dataset_fp = "processed_dataset.jsonl"
-    num_repeats = 3 #3
-    num_alphas = 101 #101
+    num_repeats = 21 #3
+    num_alphas = 201 #101
     a0 = 0 # 0
-    a1 = 5 # 3
+    a1 = 5 # 5
     gpus=1
     temperature=0.45
     prompt_version='default'
@@ -70,6 +70,7 @@ samples = dataset.select(indices)
 icvs = [icv_pos_ours] # can check other icvs later:tm:
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
 sents = [[] for _ in samples]
+confs = [[] for _ in samples]
 
 print("Starting Alpha Sweep")
 print(f"Total # Samples: {args.num_samples*args.num_repeats*args.num_alphas*len(icvs)}")
@@ -78,12 +79,13 @@ for icv_num,icv in enumerate(icvs):
     for alpha_ in alphas:
         t0 = time.time()
         model_with_adapter(model).set_adapter(icv, alpha_)
-        resps, sents_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
+        resps, sents_, confs_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
         sents = [s + [n] for s, n in zip(sents, sents_)]
-        resps = [tokenizer.encode(s) for s in resps]
-        maxLen, totLen = max(map(len, resps)), sum(map(len, resps))
-        print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f} Max Len Resp: {maxLen} Tokens/Sec: {totLen/(time.time()-t0):.2f}")
+        confs = [c + [n] for c, n in zip(confs, confs_)]
+        resps = list(map(len,[tokenizer.encode(s) for s in resps]))
+        print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
 samples = samples.add_column(f"sentiments", sents)
+samples = samples.add_column(f"confidences", confs)
 # samples.save_to_disk("sentiments")
-samples.to_json("sentiments2.jsonl")
+samples.to_json("sentiments3_confs.jsonl")
 print("Done")
