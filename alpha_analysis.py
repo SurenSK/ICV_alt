@@ -37,7 +37,7 @@ class Args():
     num_repeats = 3 #3
     num_alphas = 101 #101
     a0 = 0 # 0
-    a1 = 3 # 3
+    a1 = 5 # 3
     gpus=1
     temperature=0.45
     prompt_version='default'
@@ -80,8 +80,8 @@ for icv_num,icv in enumerate(icvs):
         model_with_adapter(model).set_adapter(icv, alpha_)
         _, sents_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
         sents = [s + [n] for s, n in zip(sents, sents_)]
-        print(f"ICV#{icv_num} Alpha: {alpha_} Time: {time.time()-t0:.2f}s Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}")
+        print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}")
 samples = samples.add_column(f"sentiments", sents)
 # samples.save_to_disk("sentiments")
-samples.to_json("sentiments.jsonl")
+samples.to_json("sentiments2.jsonl")
 print("Done")
