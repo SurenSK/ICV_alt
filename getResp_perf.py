@@ -6,7 +6,7 @@ class Args():
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1
     num_samples=256
-    batch_size=64
+    batch_size=66
     truncation_len=512
     in_8bit=True
     model_type='falcon'
