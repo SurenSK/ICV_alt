@@ -26,7 +26,7 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
-    num_samples=10
+    num_samples=1000
     truncation_len=512
     batch_size=112 #112
     in_8bit=True #True
@@ -34,10 +34,10 @@ class Args():
     model_size='7b' #7b
     max_length=20
     dataset_fp = "processed_dataset.jsonl"
-    num_repeats = 21 #3
-    num_alphas = 201 #101
-    a0 = 0 # 0
-    a1 = 5 # 5
+    num_repeats = 3 #3
+    num_alphas = 5 #101
+    a0 = 2 # 0
+    a1 = 2.4 # 5
     gpus=1
     temperature=0.45
     prompt_version='default'
@@ -74,7 +74,7 @@ confs = [[] for _ in samples]
 
 print("Starting Alpha Sweep")
 print(f"Total # Samples: {args.num_samples*args.num_repeats*args.num_alphas*len(icvs)}")
-
+report = []
 for icv_num,icv in enumerate(icvs):
     for alpha_ in alphas:
         t0 = time.time()
@@ -83,7 +83,7 @@ for icv_num,icv in enumerate(icvs):
         sents = [s + [n] for s, n in zip(sents, sents_)]
         confs = [c + [n] for c, n in zip(confs, confs_)]
         resps = list(map(len,[tokenizer.encode(s) for s in resps]))
-        print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
+        print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Positivity {sum(sents_)/len(sents_)} Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
 samples = samples.add_column(f"sentiments", sents)
 samples = samples.add_column(f"confidences", confs)
 # samples.save_to_disk("sentiments")
