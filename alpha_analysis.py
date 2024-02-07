@@ -36,7 +36,7 @@ class Args():
     dataset_fp = "processed_dataset.jsonl"
     num_repeats = 3 #3
     num_alphas = 3 #101
-    a0 = 1 # 0
+    a0 = 2 # 0
     a1 = 2.2 # 5
     gpus=1
     temperature=0.45
@@ -84,6 +84,8 @@ for icv_num,icv in enumerate(icvs):
         resps, sents_, confs_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
         sents = [s + [n] for s, n in zip(sents, sents_)]
         confs = [c + [n] for c, n in zip(confs, confs_)]
+        for s,r in zip(samples["text"],resps):
+            print(f"Sample: {s}\nResponse: {r}\n")
         resps = list(map(len,[tokenizer.encode(s) for s in resps]))
         print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Positivity {sum(sents_)/len(sents_)} Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
 samples = samples.add_column(f"sentiments", sents)
