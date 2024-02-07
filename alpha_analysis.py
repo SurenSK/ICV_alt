@@ -35,9 +35,9 @@ class Args():
     max_length=20
     dataset_fp = "processed_dataset.jsonl"
     num_repeats = 3 #3
-    num_alphas = 5 #101
-    a0 = 2 # 0
-    a1 = 2.4 # 5
+    num_alphas = 3 #101
+    a0 = 1 # 0
+    a1 = 2.2 # 5
     gpus=1
     temperature=0.45
     prompt_version='default'
