@@ -28,7 +28,7 @@ class Args():
     alpha=1.0
     num_samples=1000
     truncation_len=512
-    batch_size=112 #112
+    batch_size=64 #112
     in_8bit=True #True
     model_type='falcon' #falcon
     model_size='7b' #7b
@@ -67,8 +67,8 @@ dataset = dataset.filter(lambda sample: len(sample['text']) < 2500)
 indices = np.linspace(0, len(dataset)-1, args.num_samples, dtype=int)
 
 samples = dataset.select(indices)
-samples_ = len(tokenizer.encode(samples["text"]))
-print(f"max tokens: {max(samples_)} avg tokens: {sum(samples_)/len(samples_)}")
+samples = samples.map(lambda s: {"tokLen": len(tokenizer.encode(s["text"]))}).sort("tokLen")
+print(f"max tokens: {max(samples['tokLen'])} avg tokens: {sum(samples['tokLen'])/len(samples['tokLen'])}")
 icvs = [icv_pos_ours] # can check other icvs later:tm:
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
 sents = [[] for _ in samples]
