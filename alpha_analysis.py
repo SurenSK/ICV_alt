@@ -27,7 +27,7 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
-    num_samples=100
+    num_samples=3
     truncation_len=512
     batch_size=96 #112
     in_8bit=False #True
@@ -86,7 +86,7 @@ def alpha_indicator(alpha):
         index = alpha.index(type)
         return index if type == 1 else -index
     else:
-        return alpha
+        return f"{alpha:.2f}"
 
 a=np.eye(args.num_layers, dtype=np.int8)
 alphas=np.vstack([np.zeros(args.num_layers,dtype=np.int8),np.ones(args.num_layers,dtype=np.int8),a,a^1],dtype=np.float32).tolist()
@@ -110,7 +110,7 @@ for icv_num,icv in enumerate(icvs):
         # for s,r in zip(samples["text"],resps):
         #     print(f"Sample: {s[:100]}\nResponse: {r}\n")
         resps = list(map(len,[tokenizer.encode(s) for s in resps]))
-        report.append(f"ICV#{icv_num} Alpha: {alpha_indicator(alpha_):.2f} Time: {time.time()-t0:.2f}s Positivity {sum(sents_)/len(sents_):.2f} Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
+        report.append(f"ICV#{icv_num} Alpha: {alpha_indicator(alpha_)} Time: {time.time()-t0:.2f}s Positivity {sum(sents_)/len(sents_):.2f} Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
         print(report[-1])
 print("Alpha Sweep Complete")
 for r in report:
