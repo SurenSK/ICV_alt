@@ -30,9 +30,9 @@ class Args():
     num_samples=100
     truncation_len=512
     batch_size=96 #112
-    in_8bit=True #True
-    model_type='falcon' #falcon
-    model_size='7b' #7b
+    in_8bit=False #True
+    model_type='gpt2' #falcon
+    model_size='sm' #7b
     max_length=20
     dataset_fp = "processed_dataset.jsonl"
     num_repeats = 6 #3
@@ -89,7 +89,7 @@ def alpha_indicator(alpha):
         return alpha
 
 a=np.eye(args.num_layers, dtype=np.int8)
-alphas=np.vstack([np.zeros(args.num_layers,dtype=np.int8),np.ones(args.num_layers,dtype=np.int8),a,a^1])
+alphas=np.vstack([np.zeros(args.num_layers,dtype=np.int8),np.ones(args.num_layers,dtype=np.int8),a,a^1],dtype=np.float32).tolist()
 sents = [[] for _ in samples]
 confs = [[] for _ in samples]
 
