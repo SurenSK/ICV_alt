@@ -1,6 +1,7 @@
 import torch
 from torch.nn import functional as F
-
+import functools
+import os, types
 def tokenize_each_demonstration(tok, demonstration_list, dataset_name=None):
     tokenized_demonstration_list = []
     for exp_id in range(len(demonstration_list)):
@@ -42,9 +43,12 @@ class model_with_adapter(torch.nn.Module):
             params.requires_grad = False
 
     def get_model(self, icvs, alpha):
-        for i in range(0, len(self.model.transformer.h)):
+        num_layers = len(self.model.transformer.h)
+        if not isinstance(alpha[0], list):
+            alpha = [alpha]*num_layers
+        for i in range(num_layers):
             icvs_ = icvs[i]
-            self.model.transformer.h[i].mlp = torch.nn.Sequential(self.model.transformer.h[i].mlp, AdapterLayer(icvs_, alpha))
+            self.model.transformer.h[i].mlp = torch.nn.Sequential(self.model.transformer.h[i].mlp, AdapterLayer(icvs_, [alpha[0][i]]))
         return self.model
 
     def remove_adapter(self):

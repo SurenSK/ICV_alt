@@ -26,7 +26,7 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
-    num_samples=1000
+    num_samples=100
     truncation_len=512
     batch_size=64 #112
     in_8bit=True #True
@@ -34,10 +34,10 @@ class Args():
     model_size='7b' #7b
     max_length=20
     dataset_fp = "processed_dataset.jsonl"
-    num_repeats = 3 #3
+    num_repeats = 21 #3
     num_alphas = 3 #101
-    a0 = 2 # 0
-    a1 = 2.2 # 5
+    a0 = 1 # 0
+    a1 = 1.6 # 5
     gpus=1
     temperature=0.45
     prompt_version='default'
@@ -54,6 +54,7 @@ TaskHandler = load_task("demo")
 task_agent = TaskHandler(args.prompt_version)
 task_agent.set_seed(args.seed)
 model, tokenizer, text_pipe, sent_pipe = setup_llm_calls(args)
+args.num_layers = len(model.transformer.h)
 sentiment_demonstrations = [("Zero stars, I hate it." , "Five stars, I love it."), ("It was terrible!" , "it was awesome!"),
                             ("I would call this the worse denny's ever " , "I would call this the best denny's ever "),
                             ("I would recommend find another place." , "I would recommend this place again!"),
@@ -71,6 +72,14 @@ samples = samples.map(lambda s: {"tokLen": len(tokenizer.encode(s["text"]))}).so
 print(f"max tokens: {max(samples['tokLen'])} avg tokens: {sum(samples['tokLen'])/len(samples['tokLen'])}")
 icvs = [icv_pos_ours] # can check other icvs later:tm:
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
+def one_hots(size):
+    return [[1 if i == j else 0 for j in range(size)] for i in range(size)]
+def inv_one_hots(size):
+    return [[0 if i == j else 1 for j in range(size)] for i in range(size)]
+alphas = one_hots(args.num_layers)+inv_one_hots(args.num_layers)
+alpha_indicators = list(range(args.num_layers))+list(range(0,-1*args.num_layers,-1))
+alpha_indicators[len(alpha_indicators)//2] -= 0.1
+
 sents = [[] for _ in samples]
 confs = [[] for _ in samples]
 
@@ -78,18 +87,23 @@ print("Starting Alpha Sweep")
 print(f"Total # Samples: {args.num_samples*args.num_repeats*args.num_alphas*len(icvs)}")
 report = []
 for icv_num,icv in enumerate(icvs):
-    for alpha_ in alphas:
+    for alpha_num,alpha_ in enumerate(alphas):
+        alpha_ = [a*args.alpha for a in alpha_]
         t0 = time.time()
         model_with_adapter(model).set_adapter(icv, alpha_)
         resps, sents_, confs_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
         sents = [s + [n] for s, n in zip(sents, sents_)]
         confs = [c + [n] for c, n in zip(confs, confs_)]
-        for s,r in zip(samples["text"],resps):
-            print(f"Sample: {s}\nResponse: {r}\n")
+        # for s,r in zip(samples["text"],resps):
+        #     print(f"Sample: {s[:100]}\nResponse: {r}\n")
         resps = list(map(len,[tokenizer.encode(s) for s in resps]))
-        print(f"ICV#{icv_num} Alpha: {alpha_:.2f} Time: {time.time()-t0:.2f}s Positivity {sum(sents_)/len(sents_)} Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
+        report.append(f"ICV#{icv_num} Alpha: {alpha_indicators[alpha_num]:.2f} Time: {time.time()-t0:.2f}s Positivity {sum(sents_)/len(sents_):.2f} Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
+        print(report[-1])
+print("Alpha Sweep Complete")
+for r in report:
+    print(r)
 samples = samples.add_column(f"sentiments", sents)
 samples = samples.add_column(f"confidences", confs)
 # samples.save_to_disk("sentiments")
-samples.to_json("sentiments3_confs.jsonl")
+samples.to_json("sentiments4_layers.jsonl")
 print("Done")
