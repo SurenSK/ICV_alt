@@ -30,7 +30,7 @@ class Args():
     num_samples=100
     truncation_len=512
     batch_size=96 #112
-    in_8bit=False #True
+    in_8bit=True #True
     model_type='falcon' #falcon
     model_size='7b' #7b
     max_length=20
