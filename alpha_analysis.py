@@ -69,7 +69,7 @@ dataset = dataset.filter(lambda sample: len(sample['text']) < 2500)
 indices = np.linspace(0, len(dataset)-1, args.num_samples, dtype=int)
 
 samples = dataset.select(indices)
-samples = samples.map(lambda s: {"tokLen": len(tokenizer.encode(s["text"]))}).sort("tokLen", ascending=False)
+samples = samples.map(lambda s: {"tokLen": len(tokenizer.encode(s["text"]))}).sort("tokLen", reverse=True)
 print(f"max tokens: {max(samples['tokLen'])} avg tokens: {sum(samples['tokLen'])/len(samples['tokLen'])}")
 icvs = [icv_pos_ours] # can check other icvs later:tm:
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
