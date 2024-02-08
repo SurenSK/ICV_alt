@@ -27,18 +27,17 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
-    num_samples=200
-    truncation_len=512
+    num_samples=10
     batch_size=96 #112
     in_8bit=True #True
     model_type='falcon' #falcon
     model_size='7b' #7b
-    max_length=20
+    max_new_length=20
     dataset_fp = "processed_dataset.jsonl"
-    num_repeats = 3 #3
-    num_alphas = 3 #101
-    a0 = 1 # 0
-    a1 = 1.6 # 5
+    num_repeats = 21 #3
+    num_alphas = 201 #101
+    a0 = 0 # 0
+    a1 = 5 # 5
     gpus=1
     temperature=0.45
     prompt_version='default'
@@ -56,6 +55,7 @@ task_agent = TaskHandler(args.prompt_version)
 task_agent.set_seed(args.seed)
 model, tokenizer, text_pipe, sent_pipe = setup_llm_calls(args)
 args.num_layers = len(model.transformer.h)
+args.max_length = min(sent_pipe.tokenizer.model_max_length, text_pipe.tokenizer.model_max_length)
 sentiment_demonstrations = [("Zero stars, I hate it." , "Five stars, I love it."), ("It was terrible!" , "it was awesome!"),
                             ("I would call this the worse denny's ever " , "I would call this the best denny's ever "),
                             ("I would recommend find another place." , "I would recommend this place again!"),
@@ -65,14 +65,23 @@ icv_pos_ours = [task_agent.get_icv_ours(model, tokenize_each_demonstration(token
 
 dataset = load_dataset(args.dataset, split='train')
 dataset = dataset.filter(lambda sample: sample['label']<3)
-dataset = dataset.filter(lambda sample: len(sample['text']) < 2500)
+dataset = dataset.filter(lambda sample: len(sample['text']) < 4000)
+dataset = dataset.map(lambda s: {"tokLen": len(tokenizer.encode(s["text"]))}).sort("tokLen", reverse=True)
+dataset = dataset.filter(lambda s: s["tokLen"] < args.max_length)
+# Histogram of dataset["tokLen"]
+# plt.hist(dataset["tokLen"], bins=50)
+# plt.xlabel("Token Length")
+# plt.ylabel("Frequency")
+# plt.title("Histogram of Token Length")
+# plt.show()
+# print("test")
+# exit()
 indices = np.linspace(0, len(dataset)-1, args.num_samples, dtype=int)
 
 samples = dataset.select(indices)
-samples = samples.map(lambda s: {"tokLen": len(tokenizer.encode(s["text"]))}).sort("tokLen", reverse=True)
 print(f"max tokens: {max(samples['tokLen'])} avg tokens: {sum(samples['tokLen'])/len(samples['tokLen'])}")
 icvs = [icv_pos_ours] # can check other icvs later:tm:
-alphas = np.linspace(args.a0, args.a1, args.num_alphas)
+
 
 def alpha_indicator(alpha):
     if isinstance(alpha, list):
@@ -90,6 +99,7 @@ def alpha_indicator(alpha):
 
 a=np.eye(args.num_layers, dtype=np.int8)
 alphas=np.vstack([np.zeros(args.num_layers,dtype=np.int8),np.ones(args.num_layers,dtype=np.int8),a,a^1],dtype=np.float32).tolist()
+alphas = np.linspace(args.a0, args.a1, args.num_alphas).tolist()
 sents = [[] for _ in samples]
 confs = [[] for _ in samples]
 
@@ -99,11 +109,10 @@ print(f"Time Start {datetime.datetime.now()}")
 report = []
 for icv_num,icv in enumerate(icvs):
     for alpha_ in alphas:
-        alpha_adj = alpha_
         if isinstance(alpha_, list):
-            alpha_adj = [a*args.alpha for a in alpha_]
+            alpha_ = [a*args.alpha for a in alpha_]
         t0 = time.time()
-        model_with_adapter(model).set_adapter(icv, alpha_adj)
+        model_with_adapter(model).set_adapter(icv, alpha_)
         resps, sents_, confs_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
         sents = [s + [n] for s, n in zip(sents, sents_)]
         confs = [c + [n] for c, n in zip(confs, confs_)]
@@ -118,5 +127,5 @@ for r in report:
 samples = samples.add_column(f"sentiments", sents)
 samples = samples.add_column(f"confidences", confs)
 # samples.save_to_disk("sentiments")
-samples.to_json("sentiments4_layers.jsonl")
+samples.to_json("sentiments_toklen_alpha.jsonl")
 print("Done")

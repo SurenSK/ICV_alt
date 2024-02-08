@@ -15,7 +15,7 @@ def setup_llm_calls(args):
     model = build_model(args.model_type, args.model_size, args.in_8bit)
     if not args.in_8bit:
         model.to('cuda').eval()
-    text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size, eos_token_id=args.eos_token_id, pad_token_id=tokenizer.pad_token_id, do_sample=True, max_new_tokens=args.max_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)
+    text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size, eos_token_id=args.eos_token_id, pad_token_id=tokenizer.pad_token_id, do_sample=True, max_new_tokens=args.max_new_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)
     sent_pipe = pipeline("text-classification", device=0, model="distilbert-base-uncased-finetuned-sst-2-english", batch_size=args.batch_size)
     return model, tokenizer, text_pipe, sent_pipe
 
