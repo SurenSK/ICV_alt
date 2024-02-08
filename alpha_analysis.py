@@ -27,15 +27,15 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
-    num_samples=250
+    num_samples=100
     truncation_len=512
-    batch_size=32 #112
+    batch_size=96 #112
     in_8bit=False #True
-    model_type='gpt2' #falcon
-    model_size='sm' #7b
+    model_type='falcon' #falcon
+    model_size='7b' #7b
     max_length=20
     dataset_fp = "processed_dataset.jsonl"
-    num_repeats = 8 #3
+    num_repeats = 6 #3
     num_alphas = 3 #101
     a0 = 1 # 0
     a1 = 1.6 # 5
@@ -69,7 +69,7 @@ dataset = dataset.filter(lambda sample: len(sample['text']) < 2500)
 indices = np.linspace(0, len(dataset)-1, args.num_samples, dtype=int)
 
 samples = dataset.select(indices)
-samples = samples.map(lambda s: {"tokLen": len(tokenizer.encode(s["text"]))}).sort("tokLen")
+samples = samples.map(lambda s: {"tokLen": len(tokenizer.encode(s["text"]))}).sort("tokLen", ascending=False)
 print(f"max tokens: {max(samples['tokLen'])} avg tokens: {sum(samples['tokLen'])/len(samples['tokLen'])}")
 icvs = [icv_pos_ours] # can check other icvs later:tm:
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
