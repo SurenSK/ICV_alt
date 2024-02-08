@@ -3,6 +3,7 @@ from torch.nn import functional as F
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import time
+import datetime
 from common import setup_env, mk_parser
 from models import build_model_signature, build_tokenizer, build_model
 from tasks import load_task
@@ -26,15 +27,15 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
-    num_samples=100
+    num_samples=250
     truncation_len=512
-    batch_size=64 #112
-    in_8bit=True #True
-    model_type='falcon' #falcon
-    model_size='7b' #7b
+    batch_size=32 #112
+    in_8bit=False #True
+    model_type='gpt2' #falcon
+    model_size='sm' #7b
     max_length=20
     dataset_fp = "processed_dataset.jsonl"
-    num_repeats = 21 #3
+    num_repeats = 8 #3
     num_alphas = 3 #101
     a0 = 1 # 0
     a1 = 1.6 # 5
@@ -72,32 +73,44 @@ samples = samples.map(lambda s: {"tokLen": len(tokenizer.encode(s["text"]))}).so
 print(f"max tokens: {max(samples['tokLen'])} avg tokens: {sum(samples['tokLen'])/len(samples['tokLen'])}")
 icvs = [icv_pos_ours] # can check other icvs later:tm:
 alphas = np.linspace(args.a0, args.a1, args.num_alphas)
-def one_hots(size):
-    return [[1 if i == j else 0 for j in range(size)] for i in range(size)]
-def inv_one_hots(size):
-    return [[0 if i == j else 1 for j in range(size)] for i in range(size)]
-alphas = one_hots(args.num_layers)+inv_one_hots(args.num_layers)
-alpha_indicators = list(range(args.num_layers))+list(range(0,-1*args.num_layers,-1))
-alpha_indicators[len(alpha_indicators)//2] -= 0.1
 
+def alpha_indicator(alpha):
+    if isinstance(alpha, list):
+        c0 = alpha.count(0)
+        c1 = alpha.count(1)
+        if c1 == 0:
+            return "None"
+        if c0 == 0:
+            return "All"
+        type = 1 if c1 == 1 else 0
+        index = alpha.index(type)
+        return index if type == 1 else -index
+    else:
+        return alpha
+
+a=np.eye(args.num_layers, dtype=np.int8)
+alphas=np.vstack([np.zeros(args.num_layers,dtype=np.int8),np.ones(args.num_layers,dtype=np.int8),a,a^1])
 sents = [[] for _ in samples]
 confs = [[] for _ in samples]
 
 print("Starting Alpha Sweep")
-print(f"Total # Samples: {args.num_samples*args.num_repeats*args.num_alphas*len(icvs)}")
+print(f"Total # Samples: {args.num_samples*args.num_repeats*len(alphas)*len(icvs)}")
+print(f"Time Start {datetime.datetime.now()}")
 report = []
 for icv_num,icv in enumerate(icvs):
-    for alpha_num,alpha_ in enumerate(alphas):
-        alpha_ = [a*args.alpha for a in alpha_]
+    for alpha_ in alphas:
+        alpha_adj = alpha_
+        if isinstance(alpha_, list):
+            alpha_adj = [a*args.alpha for a in alpha_]
         t0 = time.time()
-        model_with_adapter(model).set_adapter(icv, alpha_)
+        model_with_adapter(model).set_adapter(icv, alpha_adj)
         resps, sents_, confs_ = prompt_to_sent(samples, args.num_repeats, text_pipe, sent_pipe)
         sents = [s + [n] for s, n in zip(sents, sents_)]
         confs = [c + [n] for c, n in zip(confs, confs_)]
         # for s,r in zip(samples["text"],resps):
         #     print(f"Sample: {s[:100]}\nResponse: {r}\n")
         resps = list(map(len,[tokenizer.encode(s) for s in resps]))
-        report.append(f"ICV#{icv_num} Alpha: {alpha_indicators[alpha_num]:.2f} Time: {time.time()-t0:.2f}s Positivity {sum(sents_)/len(sents_):.2f} Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
+        report.append(f"ICV#{icv_num} Alpha: {alpha_indicator(alpha_):.2f} Time: {time.time()-t0:.2f}s Positivity {sum(sents_)/len(sents_):.2f} Samples/s: {args.num_repeats*args.num_samples/(time.time()-t0):.2f}  Min/Avg/Max-RespLen: {min(resps)} {sum(resps)/len(resps):.2f} {max(resps)} Tokens/Sec: {sum(resps)/(time.time()-t0):.2f}")
         print(report[-1])
 print("Alpha Sweep Complete")
 for r in report:

@@ -22,8 +22,10 @@ def setup_llm_calls(args):
 def prompt_to_sent(samples, num_repeats, text_pipe, sent_pipe):
     samples = samples.map(lambda s: {"prompt": f"Please paraphrase the following text: {s['text']} paraphrase: "})
     samples_ = [s for s in samples["prompt"] for _ in range(num_repeats)]
-    responses = [r[0]["generated_text"].split("paraphrase: ")[1] for r in text_pipe(samples_)]
-    sentiments = sent_pipe(responses)
+    responses = [r[0]["generated_text"].split("paraphrase: ")[-1] for r in text_pipe(samples_)]
+    responses_ = [r[:500] for r in responses]
+
+    sentiments = sent_pipe(responses_)
     sents = [1 if s["label"]=="POSITIVE" else 0 for s in sentiments]
     sents = [np.mean(s) for s in np.array_split(sents, len(samples))]
     confs = [c['score'] for c in sentiments]

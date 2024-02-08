@@ -45,7 +45,7 @@ class model_with_adapter(torch.nn.Module):
     def get_model(self, icvs, alpha):
         num_layers = len(self.model.transformer.h)
         if not isinstance(alpha[0], list):
-            alpha = [alpha]*num_layers
+            alpha = [[alpha[0]]*num_layers]
         for i in range(num_layers):
             icvs_ = icvs[i]
             self.model.transformer.h[i].mlp = torch.nn.Sequential(self.model.transformer.h[i].mlp, AdapterLayer(icvs_, [alpha[0][i]]))
