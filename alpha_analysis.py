@@ -29,7 +29,7 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
-    num_samples=100
+    num_samples=30
     batch_size=120 #112
     in_8bit=True #True
     model_type='falcon' #falcon
