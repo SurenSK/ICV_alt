@@ -136,4 +136,7 @@ samples = samples.add_column(f"confidences", confs)
 samples = samples.add_column(f"similarities", confs)
 # samples.save_to_disk("sentiments")
 samples.to_json("sentiments_toklen_alpha.jsonl")
+
+df = pd.DataFrame(report, columns=["run"])
+df.to_csv("report_fuzzy.csv")
 print("Done")
