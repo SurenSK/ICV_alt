@@ -29,8 +29,8 @@ class Args():
     dataset='yelp_review_full'
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
-    num_samples=30
-    batch_size=120 #112
+    num_samples=15
+    batch_size=150 #112
     in_8bit=True #True
     model_type='falcon' #falcon
     model_size='7b' #7b
@@ -104,8 +104,8 @@ def alpha_indicator(alpha):
 
 a = np.eye(args.num_layers, dtype=np.int8)
 alphas = np.vstack([np.zeros(args.num_layers,dtype=np.int8),np.ones(args.num_layers,dtype=np.int8),a,a^1],dtype=np.float32).tolist()
-alphas = np.linspace(args.a0, args.a1, args.num_alphas).tolist()
-alphas = np.random.rand(100, 32).tolist()
+# alphas = np.linspace(args.a0, args.a1, args.num_alphas).tolist()
+# alphas = np.random.rand(100, 32).tolist()
 sents = [[] for _ in samples]
 confs = [[] for _ in samples]
 simis = [[] for _ in samples]
@@ -135,8 +135,8 @@ samples = samples.add_column(f"sentiments", sents)
 samples = samples.add_column(f"confidences", confs)
 samples = samples.add_column(f"similarities", confs)
 # samples.save_to_disk("sentiments")
-samples.to_json("sentiments_toklen_alpha.jsonl")
+samples.to_json("report_layers.jsonl")
 
 df = pd.DataFrame(report, columns=["run"])
-df.to_csv("report_fuzzy.csv")
+df.to_csv("report_layers.csv")
 print("Done")

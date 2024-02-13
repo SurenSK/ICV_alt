@@ -20,9 +20,9 @@ for s in dataset:
 
 # Adding legend, labels, and title
 plt.legend()
-plt.xlabel("Alpha")
+plt.xlabel("Layer")
 plt.ylabel("Sentiment")
-plt.title("Sentiment vs Alpha for Different Samples")
+plt.title("Sentiment vs Layer# for Different Samples")
 
 # Display the plot
 plt.show()
