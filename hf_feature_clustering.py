@@ -1,7 +1,7 @@
 from transformers import pipeline
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
-extractor = pipeline(model="tiiuae/falcon-7b", task="feature-extraction")
+extractor = pipeline(model="tiiuae/falcon-7b", task="feature-extraction", device_map="auto")
 embed = lambda inp: extractor(inp, return_tensors=True)[-1][-1]
 
 print(embed("Hello, my dog is cute.").shape)
