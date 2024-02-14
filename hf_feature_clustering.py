@@ -1,7 +1,7 @@
 from transformers import pipeline
 from sentence_transformers import SentenceTransformer, util
 import numpy as np
-extractor = pipeline(model="gpt2", task="feature-extraction")
+extractor = pipeline(model="tiiuae/falcon-7b", task="feature-extraction")
 embed = lambda inp: extractor(inp, return_tensors=True)[-1][-1]
 
 print(embed("Hello, my dog is cute.").shape)
@@ -19,11 +19,9 @@ n_samples = embeds.shape[0]
 distances = np.zeros((n_samples, n_samples))
 for i in range(n_samples):
     for j in range(n_samples):
-        print(i, j)
         distances[i, j] = np.linalg.norm(embeds[i] - embeds[j])
 
 cos_sim = util.cos_sim(embeds, embeds)
 import pandas as pd
 df = pd.DataFrame(distances)
 df.to_csv("distances.csv", index=False)
-print("test")
