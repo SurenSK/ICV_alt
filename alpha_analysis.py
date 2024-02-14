@@ -30,7 +30,7 @@ class Args():
     demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
     alpha=1.0
     num_samples=15
-    batch_size=120 #112
+    batch_size=112 #112
     in_8bit=True #True
     model_type='falcon' #falcon
     model_size='7b' #7b
