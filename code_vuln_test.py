@@ -66,13 +66,14 @@ icv_code_refusal = [task_agent.get_icv(model, tokenize_each_demonstration(tokeni
 def llm_bin_classify(query):
     prompt = [{"role": "user", "content": f"Answer with yes or no only. {query}"}]
     model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt").to('cuda')
-    output = model.generate(
+    generated_ids = model.generate(
                 model_inputs,
                 max_new_tokens=1,
                 return_dict_in_generate=True,  # Key change for getting logits
                 output_scores=True              # Also required for logits
             )
-    logits = output.logits[0][-1]
+    print(generated_ids)
+    logits = generated_ids['scores'][:, -1, :]
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
     no_index = tokenizer.encode("no", add_special_tokens=False)[0]
     relevant_logits = torch.tensor([logits[yes_index], logits[no_index]]) 
