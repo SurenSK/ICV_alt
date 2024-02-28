@@ -56,7 +56,7 @@ task_agent = TaskHandler(args.prompt_version)
 task_agent.set_seed(args.seed)
 model, tokenizer, text_pipe, _ = setup_llm_calls(args)
 print(model)
-print(len(model.layers))
+print(model.__attrs__)
 if args.model == 'falcon':
     args.num_layers = len(model.transformer.h)
 elif args.model == 'dolphin':
