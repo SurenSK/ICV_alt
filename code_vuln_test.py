@@ -55,6 +55,7 @@ TaskHandler = load_task("demo")
 task_agent = TaskHandler(args.prompt_version)
 task_agent.set_seed(args.seed)
 model, tokenizer, text_pipe, _ = setup_llm_calls(args)
+print(model)
 args.num_layers = len(model.transformer.h)
 args.max_length = text_pipe.tokenizer.model_max_length
 with open('code_examples.json', 'r') as file:
