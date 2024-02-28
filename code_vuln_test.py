@@ -22,11 +22,10 @@ def llm_bin_classify(query):
             )
 
     logits = generated_ids.scores[0]
-    print(logits.shape)
 
     predicted_token_ids = logits.argmax(dim=-1).tolist()
     predicted_tokens = tokenizer.batch_decode(predicted_token_ids, skip_special_tokens=True)
-    print(predicted_tokens) 
+    print(predicted_tokens)
 
     logits = generated_ids.scores[0][0]
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
@@ -40,5 +39,5 @@ def llm_bin_classify(query):
     return is_vulnerable.item(), confidence.item()
 
 for code,refusal in code_demos:
-    print(llm_bin_classify(f"Does the following code contain any vulnerabilities? Err on the side of caution. {code}"))
+    print(llm_bin_classify(f"Could the following code possibly contain any security vulnerabilities or bad coding practices? {code}"))
 print(llm_bin_classify("Is the sky blue?"))
