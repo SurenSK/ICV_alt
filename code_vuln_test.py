@@ -40,5 +40,5 @@ def llm_bin_classify(query):
     return is_vulnerable.item(), confidence.item()
 
 for code,refusal in code_demos:
-    print(llm_bin_classify(f"Does the following code contain any vulnerabilities? {code}"))
+    print(llm_bin_classify(f"Does the following code contain any vulnerabilities? Err on the side of caution. {code}"))
 print(llm_bin_classify("Is the sky blue?"))
