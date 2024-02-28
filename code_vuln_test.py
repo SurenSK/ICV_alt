@@ -64,7 +64,7 @@ with open('code_examples.json', 'r') as file:
 icv_code_refusal = [task_agent.get_icv(model, tokenize_each_demonstration(tokenizer, code_demos))]
 
 def llm_bin_classify(query):
-    prompt = [{"role": "user", "content": f"Answer with yes or no only. {query}"}]
+    prompt = [{"role": "user", "content": f"Answer with \"yes\" or \"no\" in lowercase only. {query}"}]
     model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt").to('cuda')
     generated_ids = model.generate(
                 model_inputs,
@@ -89,5 +89,5 @@ def llm_bin_classify(query):
 
     return is_vulnerable.item(), confidence.item()
 
-print(llm_bin_classify("Is the sky red?"))
+print(llm_bin_classify("Is the sky blue?"))
 print(code_demos)
