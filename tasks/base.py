@@ -247,7 +247,7 @@ class BaseProbInference:
     @staticmethod
     def modified_forward(model, inputs, forward_modifiers = ()):
         context_manager = modified_forward_context_manager(model, forward_modifiers=forward_modifiers)
-        input_ids = torch.tensor(inputs['input_ids'])
+        input_ids = torch.tensor(inputs['input_ids']).to('cuda')
         attention_mask = torch.tensor(inputs['attention_mask'])
         with context_manager:
             outputs = model(

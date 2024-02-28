@@ -27,6 +27,8 @@ def build_model_signature(model_type, model_size, instruct=''):
         return f"lmsys/vicuna-{model_size}{instruct}"
     if model_type == 'llama-2':
         return f"meta-llama/Llama-2-7b-chat-hf"
+    if model_type == 'dolphin':
+        return f"cognitivecomputations/dolphin-2.2.1-mistral-{model_size}"
         
 def build_tokenizer(model_type, model_size, padding_side="left", use_fast=False):
     sign = build_model_signature(model_type, model_size)
