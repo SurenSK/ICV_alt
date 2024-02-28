@@ -40,7 +40,7 @@ def llm_bin_classify(query):
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 tokenizer = AutoTokenizer.from_pretrained("cognitivecomputations/dolphin-2.2.1-mistral-7b")
-model = AutoModelForCausalLM.from_pretrained("cognitivecomputations/dolphin-2.2.1-mistral-7b")
+model = AutoModelForCausalLM.from_pretrained("cognitivecomputations/dolphin-2.2.1-mistral-7b").to("cuda")
 messages = [
     {"role": "user", "content": "What is your favourite condiment?"},
     {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
