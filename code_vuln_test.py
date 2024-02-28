@@ -72,9 +72,7 @@ def llm_bin_classify(query):
                 return_dict_in_generate=True,  # Key change for getting logits
                 output_scores=True              # Also required for logits
             )
-    print(generated_ids)
-    print(generated_ids.scores[0].shape)
-    logits = generated_ids['scores']
+    logits = generated_ids.scores[0]
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
     no_index = tokenizer.encode("no", add_special_tokens=False)[0]
     relevant_logits = torch.tensor([logits[yes_index], logits[no_index]]) 
