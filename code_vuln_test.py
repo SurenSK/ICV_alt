@@ -27,7 +27,7 @@ def llm_bin_classify(query):
 
     predicted_token_ids = logits.argmax(dim=-1).tolist()
     predicted_tokens = tokenizer.batch_decode(predicted_token_ids, skip_special_tokens=True)
-    print(predicted_tokens)
+    print(query, predicted_tokens)
 
     logits = generated_ids.scores[0][0]
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
@@ -43,3 +43,8 @@ def llm_bin_classify(query):
 for code,refusal in code_demos:
     print(llm_bin_classify(f"Does the following C code contain any security vulnerabilities or unsafe coding practices? {code}"))
 print(llm_bin_classify("Is the sky blue?"))
+print(llm_bin_classify("Is the sky red?"))
+print(llm_bin_classify("Is the sky green?"))
+print(llm_bin_classify("Is 2+2=4?"))
+print(llm_bin_classify("Is 2+2=5?"))
+print(llm_bin_classify("Is 2+2=6?"))
