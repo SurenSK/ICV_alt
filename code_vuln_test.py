@@ -57,7 +57,7 @@ model, tokenizer, text_pipe, _ = setup_llm_calls(args)
 if model == 'falcon':
     args.num_layers = len(model.transformer.h)
 elif model == 'dolphin':
-    args.num_layers = 32
+    args.num_layers = len(model.layers)
 args.max_length = text_pipe.tokenizer.model_max_length
 with open('code_examples.json', 'r') as file:
     code_demos = json.load(file)
