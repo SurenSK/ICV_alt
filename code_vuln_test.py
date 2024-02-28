@@ -89,5 +89,5 @@ def llm_bin_classify(query):
 
     return is_vulnerable.item(), confidence.item()
 
-print(llm_bin_classify("Is the sky blue?"))
+print(llm_bin_classify("Is the sky red?"))
 print(code_demos)
