@@ -65,7 +65,7 @@ icv_code_refusal = [task_agent.get_icv(model, tokenize_each_demonstration(tokeni
 
 def llm_bin_classify(query):
     prompt = [{"role": "user", "content": f"Answer the following question with \"yes\" or \"no\" only, nothing else. {query}"}]
-    model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt").to('cuda')
+    model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt", padding=True).to('cuda')
     generated_ids = model.generate(
                 model_inputs,
                 max_new_tokens=1,
