@@ -76,8 +76,8 @@ def llm_bin_classify(query):
     logits = generated_ids.scores[0][0]
     predicted_token_id = logits.argmax().item()
     predicted_token = tokenizer.decode(predicted_token_id)
-
     print(predicted_token_id, predicted_token)
+
     logits = generated_ids.scores[0].squeeze()
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
     no_index = tokenizer.encode("no", add_special_tokens=False)[0]
@@ -89,5 +89,5 @@ def llm_bin_classify(query):
 
     return is_vulnerable.item(), confidence.item()
 
-print(llm_bin_classify("Is the sky blue?"))
+print(llm_bin_classify("Is the sky red?"))
 print(code_demos)
