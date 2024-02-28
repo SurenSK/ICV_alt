@@ -75,10 +75,15 @@ def llm_bin_classify(query):
                 output_scores=True              # Also required for logits
             )
 
-    logits = generated_ids.scores[0][0]
-    predicted_token_id = logits.argmax().item()
-    predicted_token = tokenizer.decode(predicted_token_id)
-    print(predicted_token_id, predicted_token)
+    logits = generated_ids.scores[0]  # Access all logits at once
+    predicted_token_ids = logits.argmax(dim=-1).tolist()  # Get a list of predicted token IDs 
+
+    # Handle EOS token
+    if tokenizer.eos_token_id in predicted_token_ids:
+        predicted_token_ids = predicted_token_ids[:predicted_token_ids.index(tokenizer.eos_token_id)]  # Remove tokens after EOS
+    
+    predicted_tokens = tokenizer.decode(predicted_token_ids)
+    print(predicted_tokens) 
 
     logits = generated_ids.scores[0].squeeze()
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
