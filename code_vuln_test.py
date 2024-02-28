@@ -49,14 +49,13 @@ class Args():
     momentum=0.9
     seed=0
     top_k=50
-    eos_token_id=[104,193,1001,25,1702,18858,3166]
 args = Args()
 TaskHandler = load_task("demo")
 task_agent = TaskHandler(args.prompt_version)
 task_agent.set_seed(args.seed)
 model, tokenizer, text_pipe, _ = setup_llm_calls(args)
 print(model)
-print(model.__attrs__)
+print(model.__dict__)
 if args.model == 'falcon':
     args.num_layers = len(model.transformer.h)
 elif args.model == 'dolphin':
