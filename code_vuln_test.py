@@ -70,7 +70,7 @@ def llm_bin_classify(query):
     model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt", padding=True).to('cuda')
     generated_ids = model.generate(
                 model_inputs,
-                max_new_tokens=1,
+                max_new_tokens=2,
                 return_dict_in_generate=True,  # Key change for getting logits
                 output_scores=True              # Also required for logits
             )
