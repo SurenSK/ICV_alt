@@ -39,7 +39,7 @@ def build_tokenizer(model_type, model_size, padding_side="left", use_fast=False)
         if not use_fast:
             tok = AutoTokenizer.from_pretrained(sign, padding_side=padding_side, cache_dir=str(checkpoints_root))
         else:
-            tok = PreTrainedTokenizerFast.from_pretrained(sign, padding_side=padding_side, cache_dir=str(checkpoints_root))
+            tok = PreTrainedTokenizerFast.from_pretrained(sign, cache_dir=str(checkpoints_root))
 
     if model_type in ["gpt2", "e-gpt"]:
         tok.pad_token_id = tok.eos_token_id

@@ -11,10 +11,11 @@ os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'expandable_segments:True'
 import torch
 def setup_llm_calls(args):
     setup_env(gpu_s=args.gpus, seed=args.seed)
-    tokenizer = build_tokenizer(args.model_type, args.model_size, padding_side='left')
+    tokenizer = build_tokenizer(args.model_type, args.model_size)
     model = build_model(args.model_type, args.model_size, args.in_8bit)
     if not args.in_8bit:
         model.to('cuda').eval()
+    return model, tokenizer
     text_pipe = pipeline('text-generation', model=model, tokenizer=tokenizer, batch_size=args.batch_size, do_sample=True, max_new_tokens=args.max_new_length, top_k=args.top_k, temperature=args.temperature, num_return_sequences=1)
     sent_pipe = pipeline("text-classification", device=0, model="distilbert-base-uncased-finetuned-sst-2-english", batch_size=args.batch_size)
     return model, tokenizer, text_pipe, sent_pipe
