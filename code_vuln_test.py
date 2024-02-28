@@ -73,7 +73,7 @@ def llm_bin_classify(query):
                 output_scores=True              # Also required for logits
             )
     logits = generated_ids.scores[0].squeeze()
-    print(logits.shape)
+    print(tokenizer.batch_decode(generated_ids)[0]
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
     no_index = tokenizer.encode("no", add_special_tokens=False)[0]
     relevant_logits = torch.tensor([logits[yes_index], logits[no_index]]) 
