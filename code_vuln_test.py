@@ -66,12 +66,11 @@ icv_code_refusal = [task_agent.get_icv(model, tokenize_each_demonstration(tokeni
 def llm_bin_classify(query):
     prompt = [
         {"role": "system", "content": "This is a binary classification task. Reply with \"yes\" or \"no\" only, nothing else."},
-        {"role": "user", "content": f"{query}"},
-        {"role": "assistant"}]
+        {"role": "user", "content": f"{query}"}]
     model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt", padding=True).to('cuda')
     generated_ids = model.generate(
                 model_inputs,
-                max_new_tokens=20,
+                max_length=50,
                 return_dict_in_generate=True,
                 output_scores=True
             )
@@ -80,7 +79,7 @@ def llm_bin_classify(query):
     print(logits.shape)
 
     predicted_token_ids = logits.argmax(dim=-1).tolist()
-    predicted_tokens = tokenizer.decode(predicted_token_ids)
+    predicted_tokens = tokenizer.decode(predicted_token_ids, skip_special_tokens=True)
     print(predicted_tokens) 
 
     logits = generated_ids.scores[0][0]
