@@ -70,7 +70,8 @@ def llm_bin_classify(query):
     model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt", padding=True).to('cuda')
     generated_ids = model.generate(
                 model_inputs,
-                max_length=50,
+                max_new_tokens=100,
+                do_sample=True,
                 return_dict_in_generate=True,
                 output_scores=True
             )
@@ -79,8 +80,8 @@ def llm_bin_classify(query):
     print(logits.shape)
 
     predicted_token_ids = logits.argmax(dim=-1).tolist()
-    predicted_tokens = tokenizer.decode(predicted_token_ids, skip_special_tokens=True)
-    print(predicted_tokens) 
+    # predicted_tokens = tokenizer.decode(predicted_token_ids, skip_special_tokens=True)
+    print(tokenizer.batch_decode(predicted_token_ids)[0]) 
 
     logits = generated_ids.scores[0][0]
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
