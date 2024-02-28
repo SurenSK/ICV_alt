@@ -1,66 +1,7 @@
 import torch
-from torch.nn import functional as F
-from torch.utils.data import DataLoader
-from tqdm import tqdm
-import time
-import datetime
-from common import setup_env, mk_parser
-from models import build_model_signature, build_tokenizer, build_model
-from tasks import load_task
-from utils.logger import tabular_pretty_print
-from utils.tools import ensure_folder
-from utils.pca import PCA
-from utils.llm_layers import get_layers
-import numpy as np
-
-import pandas as pd
-from transformers import pipeline
-from datasets import load_dataset
-import jsonlines
-from datasets import Dataset
-from transformers.pipelines.pt_utils import KeyPairDataset
-import random
-import json
-
-from model_with_adapter import tokenize_each_demonstration, AdapterLayer, model_with_adapter
-from getResp import setup_llm_calls, prompt_to_sent, flush_tensors
-class Args():
-    dataset='yelp_review_full'
-    demonstrations_fp="ICV_alt/sentiment_demonstrations.csv"
-    alpha=1.0
-    num_samples=15
-    batch_size=112 #112
-    in_8bit=True #True
-    model_type='dolphin' #falcon
-    model_size='7b' #7b
-    max_new_length=20
-    dataset_fp = "processed_dataset.jsonl"
-    num_repeats = 11 #3
-    num_alphas = 201 #101
-    a0 = 0 # 0
-    a1 = 4 # 5
-    gpus=1
-    temperature=0.45
-    prompt_version='default'
-    exemplar_method='random'
-    num_k_shots=1
-    kv_iter= 15
-    step_size=0.01
-    momentum=0.9
-    seed=0
-    top_k=50
-args = Args()
-TaskHandler = load_task("demo")
-task_agent = TaskHandler(args.prompt_version)
-task_agent.set_seed(args.seed)
-model, tokenizer  = setup_llm_calls(args)
-if model == 'falcon':
-    args.num_layers = len(model.transformer.h)
-elif model == 'dolphin':
-    args.num_layers = len(model.layers)
-with open('code_examples.json', 'r') as file:
-    code_demos = json.load(file)
-icv_code_refusal = [task_agent.get_icv(model, tokenize_each_demonstration(tokenizer, code_demos))]
+from transformers import AutoTokenizer, AutoModelForCausalLM
+tokenizer = AutoTokenizer.from_pretrained("cognitivecomputations/dolphin-2.2.1-mistral-7b")
+model = AutoModelForCausalLM.from_pretrained("cognitivecomputations/dolphin-2.2.1-mistral-7b", load_in_8bit=True)
 
 def llm_bin_classify(query):
     prompt = [
