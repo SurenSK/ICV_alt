@@ -64,7 +64,9 @@ with open('code_examples.json', 'r') as file:
 icv_code_refusal = [task_agent.get_icv(model, tokenize_each_demonstration(tokenizer, code_demos))]
 
 def llm_bin_classify(query):
-    prompt = [{"role": "user", "content": f"Answer the following question with \"yes\" or \"no\" only, nothing else. {query}"}]
+    prompt = [
+        {"role": "system", "content": "This is a binary classification task. Reply with \"yes\" or \"no\" only, nothing else."},
+        {"role": "user", "content": f"{query}"}]
     model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt", padding=True).to('cuda')
     generated_ids = model.generate(
                 model_inputs,
@@ -89,5 +91,5 @@ def llm_bin_classify(query):
 
     return is_vulnerable.item(), confidence.item()
 
-for code,whine in code_demos:
+for code,refusal in code_demos:
     print(llm_bin_classify(f"Does the following code contain any vulnerabilities? {code}"))
