@@ -70,14 +70,15 @@ def llm_bin_classify(query):
     model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt", padding=True).to('cuda')
     generated_ids = model.generate(
                 model_inputs,
-                max_new_tokens=2,
+                max_new_tokens=20,
                 return_dict_in_generate=True,  # Key change for getting logits
                 output_scores=True              # Also required for logits
             )
 
     logits = generated_ids.scores[0]  # Access all logits at once
-    predicted_token_ids = logits.argmax(dim=-1).tolist()  # Get a list of predicted token IDs 
+    print(logits.shape)
 
+    predicted_token_ids = logits.argmax(dim=-1).tolist()  # Get a list of predicted token IDs 
     predicted_tokens = tokenizer.decode(predicted_token_ids)
     print(predicted_tokens) 
 
