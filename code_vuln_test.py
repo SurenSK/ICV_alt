@@ -59,7 +59,7 @@ print(model.__dict__)
 if model == 'falcon':
     args.num_layers = len(model.transformer.h)
 elif model == 'dolphin':
-    args.num_layers = len(model.layers)
+    args.num_layers = 32
 args.max_length = text_pipe.tokenizer.model_max_length
 with open('code_examples.json', 'r') as file:
     code_demos = json.load(file)
