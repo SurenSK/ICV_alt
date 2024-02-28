@@ -64,11 +64,11 @@ with open('code_examples.json', 'r') as file:
 icv_code_refusal = [task_agent.get_icv(model, tokenize_each_demonstration(tokenizer, code_demos))]
 
 def llm_bin_classify(query):
-    prompt = f"Answer with yes or no only. {query}"
-    inputs = tokenizer(prompt, return_tensors="pt").to('cuda')
+    prompt = [{"role": "user", "content": f"Answer with yes or no only. {query}"}]
+    model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt").to('cuda')
     output = model.generate(
-                inputs, 
-                max_length=len(inputs) + 1, 
+                model_inputs,
+                max_new_tokens=1,
                 return_dict_in_generate=True,  # Key change for getting logits
                 output_scores=True              # Also required for logits
             )
