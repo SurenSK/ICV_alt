@@ -66,7 +66,8 @@ icv_code_refusal = [task_agent.get_icv(model, tokenize_each_demonstration(tokeni
 def llm_bin_classify(query):
     prompt = [
         {"role": "system", "content": "This is a binary classification task. Reply with \"yes\" or \"no\" only, nothing else."},
-        {"role": "user", "content": f"{query}"}]
+        {"role": "user", "content": f"{query}"}
+        {"role": "assistant"}]
     model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt", padding=True).to('cuda')
     generated_ids = model.generate(
                 model_inputs,
