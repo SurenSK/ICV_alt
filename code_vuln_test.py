@@ -78,14 +78,10 @@ def llm_bin_classify(query):
     logits = generated_ids.scores[0]  # Access all logits at once
     predicted_token_ids = logits.argmax(dim=-1).tolist()  # Get a list of predicted token IDs 
 
-    # Handle EOS token
-    if tokenizer.eos_token_id in predicted_token_ids:
-        predicted_token_ids = predicted_token_ids[:predicted_token_ids.index(tokenizer.eos_token_id)]  # Remove tokens after EOS
-    
     predicted_tokens = tokenizer.decode(predicted_token_ids)
     print(predicted_tokens) 
 
-    logits = generated_ids.scores[0].squeeze()
+    logits = generated_ids.scores[0][0]
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
     no_index = tokenizer.encode("no", add_special_tokens=False)[0]
     relevant_logits = torch.tensor([logits[yes_index], logits[no_index]]) 
@@ -98,3 +94,4 @@ def llm_bin_classify(query):
 
 for code,refusal in code_demos:
     print(llm_bin_classify(f"Does the following code contain any vulnerabilities? {code}"))
+print(llm_bin_classify("Is the sky blue?"))
