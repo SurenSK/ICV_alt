@@ -4,7 +4,8 @@ import json
 
 tokenizer = AutoTokenizer.from_pretrained("cognitivecomputations/dolphin-2.2.1-mistral-7b")
 model = AutoModelForCausalLM.from_pretrained("cognitivecomputations/dolphin-2.2.1-mistral-7b", load_in_8bit=True)
-
+if tokenizer.pad_token is None:
+    tokenizer.pad_token = tokenizer.eos_token
 with open('code_examples.json', 'r') as f:
     code_demos = json.load(f)
 
@@ -18,7 +19,8 @@ def llm_bin_classify(query):
                 max_new_tokens=1,
                 do_sample=True,
                 return_dict_in_generate=True,
-                output_scores=True
+                output_scores=True,
+                pad_token_id=tokenizer.pad_token_id
             )
 
     logits = generated_ids.scores[0]
