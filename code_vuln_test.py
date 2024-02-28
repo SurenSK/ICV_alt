@@ -70,7 +70,7 @@ def llm_bin_classify(query):
     model_inputs  = tokenizer.apply_chat_template(prompt, return_tensors="pt", padding=True).to('cuda')
     generated_ids = model.generate(
                 model_inputs,
-                max_new_tokens=100,
+                max_new_tokens=1,
                 do_sample=True,
                 return_dict_in_generate=True,
                 output_scores=True
@@ -80,8 +80,8 @@ def llm_bin_classify(query):
     print(logits.shape)
 
     predicted_token_ids = logits.argmax(dim=-1).tolist()
-    # predicted_tokens = tokenizer.decode(predicted_token_ids, skip_special_tokens=True)
-    print(tokenizer.batch_decode(predicted_token_ids)[0]) 
+    predicted_tokens = tokenizer.decode(predicted_token_ids, skip_special_tokens=True)
+    print(predicted_tokens) 
 
     logits = generated_ids.scores[0][0]
     yes_index = tokenizer.encode("yes", add_special_tokens=False)[0]
@@ -94,6 +94,17 @@ def llm_bin_classify(query):
 
     return is_vulnerable.item(), confidence.item()
 
-for code,refusal in code_demos:
-    print(llm_bin_classify(f"Does the following code contain any vulnerabilities? {code}"))
-print(llm_bin_classify("Is the sky blue?"))
+# for code,refusal in code_demos:
+#     print(llm_bin_classify(f"Does the following code contain any vulnerabilities? {code}"))
+# print(llm_bin_classify("Is the sky blue?"))
+
+messages = [
+    {"role": "user", "content": "What is your favourite condiment?"},
+    {"role": "assistant", "content": "Well, I'm quite partial to a good squeeze of fresh lemon juice. It adds just the right amount of zesty flavour to whatever I'm cooking up in the kitchen!"},
+    {"role": "user", "content": "Do you have mayonnaise recipes?"}
+]
+
+model_inputs = tokenizer.apply_chat_template(messages, return_tensors="pt").to("cuda")
+
+generated_ids = model.generate(model_inputs, max_new_tokens=100, do_sample=True)
+print(tokenizer.batch_decode(generated_ids)[0])
